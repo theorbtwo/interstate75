@@ -1,7 +1,4 @@
-# cmake file for Raspberry Pi Pico
-set(PICO_BOARD "pimoroni_i75w_2350")
-set(PICO_BOARD_HEADER_DIRS ${CMAKE_CURRENT_LIST_DIR})
-set(PICO_PLATFORM "rp2350")
+set(PICO_BOARD "pico2_w")
 
 # Board specific version of the frozen manifest
 set(MICROPY_FROZEN_MANIFEST ${MICROPY_BOARD_DIR}/manifest.py)
@@ -34,5 +31,3 @@ set(MICROPY_BLUETOOTH_BTSTACK ON)
 # CYW43_ENABLE_BLUETOOTH = 1,
 # MICROPY_PY_BLUETOOTH_CYW43 = 1
 set(MICROPY_PY_BLUETOOTH_CYW43 ON)
-
-

@@ -16,11 +16,7 @@
 #define CYW43_GPIO                              (1)
 #define CYW43_SPI_PIO                           (1)
 
-#ifndef CYW43_WL_GPIO_COUNT
-#define CYW43_WL_GPIO_COUNT 3
-#endif
-
-#define MICROPY_HW_PIN_EXT_COUNT CYW43_WL_GPIO_COUNT
+#define MICROPY_HW_PIN_EXT_COUNT    CYW43_WL_GPIO_COUNT
 
 int mp_hal_is_pin_reserved(int n);
 #define MICROPY_HW_PIN_RESERVED(i) mp_hal_is_pin_reserved(i)
