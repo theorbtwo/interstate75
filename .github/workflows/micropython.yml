@@ -14,9 +14,9 @@ jobs:
     strategy:
       matrix:
         include:
-        - name: pico_i75
-        - name: pico_w_i75
-        - name: pico2_w_i75
+        - name: i75_rp2040
+        - name: i75w_rp2040
+        - name: i75w_rp2350
 
     env:
       # MicroPython version will be contained in github.event.release.tag_name for releases
