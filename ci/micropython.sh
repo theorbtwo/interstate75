@@ -122,7 +122,11 @@ function ci_cmake_build {
     # TODO: We should probably define some means to configure this
     # Like using CMake to invoke dir2uf2
     EXAMPLES_DIR="$(printf $BOARD | cut -d_ -f3)_unicorn/launch"
-    EXAMPLES_ROOT="$CI_PROJECT_ROOT/examples"
+    if [[ "$BOARD" -eq "i75w_rp2350" ]]; then
+        EXAMPLES_ROOT="$CI_PROJECT_ROOT/examples"
+    else
+        EXAMPLES_ROOT="$CI_PROJECT_ROOT/examples-2040"
+    fi
     TOOLS_DIR=$CI_BUILD_ROOT/tools
     BUILD_DIR="$CI_BUILD_ROOT/build-$BOARD"
     ccache --zero-stats || true
