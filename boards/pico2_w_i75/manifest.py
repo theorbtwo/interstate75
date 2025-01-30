@@ -7,4 +7,5 @@ require("aioble")
 
 include("../manifest-common.py")
 
-freeze("../../modules/py_w_frozen/")
+freeze("../../modules/wireless/")
+freeze("../../modules/rp2350/")
