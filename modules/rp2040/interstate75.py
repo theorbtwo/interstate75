@@ -3,13 +3,11 @@ from picographics import PicoGraphics, DISPLAY_INTERSTATE75_32X32, DISPLAY_INTER
 from pimoroni_i2c import PimoroniI2C
 import hub75
 import sys
-import plasma
 
 # Index Constants
 SWITCH_A = 0
 SWITCH_B = 1
 SWITCH_BOOT = 1
-SWITCH_BOOT_W_RP2350 = 2
 
 
 class Interstate75:
@@ -17,11 +15,9 @@ class Interstate75:
     I2C_SCL_PIN = 21
     SWITCH_PINS = (14, 23)
     SWITCH_PINS_W = (14, 15)
-    SWITCH_PINS_W_RP2350 = (14, 15, 22)
     LED_R_PIN = 16
     LED_G_PIN = 17
     LED_B_PIN = 18
-    WS2812_PIN = 18  # For Interstate 75 W (RP2350)
 
     # Display Types
     DISPLAY_INTERSTATE75_32X32 = DISPLAY_INTERSTATE75_32X32
@@ -45,27 +41,24 @@ class Interstate75:
     COLOR_ORDER_BGR = hub75.COLOR_ORDER_BGR
 
     # Count Constants
-    NUM_SWITCHES = 3
+    NUM_SWITCHES = 2
 
     def __init__(self, display, panel_type=hub75.PANEL_GENERIC, stb_invert=False, color_order=hub75.COLOR_ORDER_RGB):
         self.interstate75w = "Pico W" in sys.implementation._machine
-        self.interstate75w_rp2350 = "Interstate 75 (Pico W) with RP2350" in sys.implementation._machine
         self.display = PicoGraphics(display=display)
         self.width, self.height = self.display.get_bounds()
         print(self.width, self.height)
-
+        
         out_width = self.width
         out_height = self.height
-
+        
         if display == DISPLAY_INTERSTATE75_128X128:
             out_width = 256
             out_height = 64
-
+        
         self.hub75 = hub75.Hub75(out_width, out_height, panel_type=panel_type, stb_invert=stb_invert, color_order=color_order)
         self.hub75.start()
-        if self.interstate75w_rp2350:
-            self._switch_pins = self.SWITCH_PINS_W_RP2350
-        elif self.interstate75w:
+        if self.interstate75w:
             self._switch_pins = self.SWITCH_PINS_W
         else:
             self._switch_pins = self.SWITCH_PINS
@@ -75,12 +68,7 @@ class Interstate75:
         for i in range(self.NUM_SWITCHES):
             self.__switches.append(Button(self._switch_pins[i]))
 
-        if self.interstate75w_rp2350:
-            # The RGB LED is a WS2812 on Interstate 75 W (RP2350)
-            self.__rgb = plasma.WS2812(1, 0, 2, Interstate75.WS2812_PIN)
-            self.__rgb.start()
-        else:
-            self.__rgb = RGBLED(Interstate75.LED_R_PIN, Interstate75.LED_G_PIN, Interstate75.LED_B_PIN, invert=True)
+        self.__rgb = RGBLED(Interstate75.LED_R_PIN, Interstate75.LED_G_PIN, Interstate75.LED_B_PIN, invert=True)
 
         # Set up the i2c for Qw/st and Breakout Garden
         self.i2c = PimoroniI2C(self.I2C_SDA_PIN, self.I2C_SCL_PIN, 100000)
@@ -92,11 +80,8 @@ class Interstate75:
 
     def switch_pressed(self, switch):
         if switch < 0 or switch >= self.NUM_SWITCHES:
-            raise ValueError("switch out of range. Expected SWITCH_A (0), SWITCH_B/BOOT (1) or SWITCH_BOOT_W_RP2350 (2)")
+            raise ValueError("switch out of range. Expected SWITCH_A (0), SWITCH_B/BOOT (1)")
         return self.__switches[switch].is_pressed
 
     def set_led(self, r, g, b):
-        if self.interstate75w_rp2350:
-            self.__rgb.set_rgb(0, r, g, b)
-        else:
-            self.__rgb.set_rgb(r, g, b)
+        self.__rgb.set_rgb(r, g, b)
