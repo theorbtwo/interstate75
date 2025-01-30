@@ -121,11 +121,10 @@ function ci_cmake_build {
     # Hack to deal with each board needing its own baked directory
     # TODO: We should probably define some means to configure this
     # Like using CMake to invoke dir2uf2
-    EXAMPLES_DIR="$(printf $BOARD | cut -d_ -f3)_unicorn/launch"
     if [[ "$BOARD" -eq "i75w_rp2350" ]]; then
-        EXAMPLES_ROOT="$CI_PROJECT_ROOT/examples"
+        EXAMPLES_DIR="$CI_PROJECT_ROOT/examples"
     else
-        EXAMPLES_ROOT="$CI_PROJECT_ROOT/examples-2040"
+        EXAMPLES_DIR="$CI_PROJECT_ROOT/examples-2040"
     fi
     TOOLS_DIR=$CI_BUILD_ROOT/tools
     BUILD_DIR="$CI_BUILD_ROOT/build-$BOARD"
@@ -141,8 +140,8 @@ function ci_cmake_build {
 
     if [ -f "$MICROPY_BOARD_DIR/manifest.txt" ] && [ -d "$TOOLS_DIR/dir2uf2" ]; then
         log_inform "Creating $(pwd)/$BOARD-with-filesystem.uf2"
-        log_inform "Using dir: $EXAMPLES_ROOT/$EXAMPLES_DIR"
+        log_inform "Using dir: $EXAMPLES_DIR"
         python3 -m pip install littlefs-python==0.12.0
-        $TOOLS_DIR/dir2uf2/dir2uf2 --fs-compact --sparse --append-to "$(pwd)/$BOARD.uf2" --manifest "$MICROPY_BOARD_DIR/manifest.txt" --filename with-filesystem.uf2 "$EXAMPLES_ROOT/$EXAMPLES_DIR"
+        $TOOLS_DIR/dir2uf2/dir2uf2 --fs-compact --sparse --append-to "$(pwd)/$BOARD.uf2" --manifest "$MICROPY_BOARD_DIR/manifest.txt" --filename with-filesystem.uf2 "$EXAMPLES_DIR"
     fi
 }
