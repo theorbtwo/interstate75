@@ -1,6 +1,5 @@
 """
-buttons.py
-Push either switch A, switch B or the BOOT switch
+Basic example showing how to read the buttons on I75 (RP2350).
 """
 
 import interstate75

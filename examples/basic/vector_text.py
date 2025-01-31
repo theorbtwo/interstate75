@@ -1,3 +1,12 @@
+"""
+Vector font demo! Vector fonts are slower but smoother. They are best used for large text.
+
+You will need to copy the .af font file to your I75.
+(this script assumes they are in the basic/ directory).
+
+Find out how to convert your own fonts to .af here: https://github.com/lowfatcode/alright-fonts
+"""
+
 from interstate75 import Interstate75, DISPLAY_INTERSTATE75_128X128
 from picovector import ANTIALIAS_BEST, PicoVector, Transform
 
@@ -20,7 +29,7 @@ vector.set_transform(t)
 
 # Set our font, size and spacing.
 # Don't forget to transfer the font file to the I75W
-vector.set_font("cherry-hq.af", 55)
+vector.set_font("/basic/cherry-hq.af", 55)
 vector.set_font_letter_spacing(100)
 vector.set_font_word_spacing(100)
 

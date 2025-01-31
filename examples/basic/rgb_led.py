@@ -1,3 +1,7 @@
+"""
+Basic example showing how to light up the RGB LED on the I75 board.
+"""
+
 from interstate75 import Interstate75
 from time import sleep
 
