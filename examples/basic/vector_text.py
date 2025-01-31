@@ -2,7 +2,7 @@
 Vector font demo! Vector fonts are slower but smoother. They are best used for large text.
 
 You will need to copy the .af font file to your I75.
-(this script assumes they are in the basic/ directory).
+(this script assumes it is in the /basic directory).
 
 Find out how to convert your own fonts to .af here: https://github.com/lowfatcode/alright-fonts
 """
