@@ -48,14 +48,14 @@ class Interstate75:
         self.display = PicoGraphics(display=display)
         self.width, self.height = self.display.get_bounds()
         print(self.width, self.height)
-        
+
         out_width = self.width
         out_height = self.height
-        
+
         if display == DISPLAY_INTERSTATE75_128X128:
             out_width = 256
             out_height = 64
-        
+
         self.hub75 = hub75.Hub75(out_width, out_height, panel_type=panel_type, stb_invert=stb_invert, color_order=color_order)
         self.hub75.start()
         if self.interstate75w:
