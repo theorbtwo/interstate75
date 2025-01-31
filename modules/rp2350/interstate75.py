@@ -14,9 +14,6 @@ class Interstate75:
     I2C_SDA_PIN = 20
     I2C_SCL_PIN = 21
     SWITCH_PINS = (14, 15, 22)
-    LED_R_PIN = 16
-    LED_G_PIN = 17
-    LED_B_PIN = 18
     WS2812_PIN = 18  # For Interstate 75 W (RP2350)
 
     # Display Types

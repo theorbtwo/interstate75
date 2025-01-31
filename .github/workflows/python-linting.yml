@@ -22,3 +22,9 @@ jobs:
       run: |
         source .venv/bin/activate
         python -m flake8 --show-source --ignore E501 examples/
+
+    - name: Lint MicroPython Modules
+      shell: bash
+      run: |
+        source .venv/bin/activate
+        python -m flake8 --show-source --ignore E501 modules/
