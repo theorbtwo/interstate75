@@ -1,5 +1,5 @@
 """
-Basic example showing how to read the buttons on I75 (RP2350).
+Basic example showing how to read the buttons on I75.
 """
 
 import interstate75
@@ -11,5 +11,5 @@ while True:
         print("Switch A pressed")
     if i75.switch_pressed(interstate75.SWITCH_B):
         print("Switch B pressed")
-    if i75.switch_pressed(interstate75.SWITCH_BOOT_W_RP2350):
+    if i75.switch_pressed(interstate75.SWITCH_BOOT):
         print("Switch Boot pressed")
