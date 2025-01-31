@@ -47,7 +47,6 @@ class Interstate75:
         self.interstate75w = "Pico W" in sys.implementation._machine
         self.display = PicoGraphics(display=display)
         self.width, self.height = self.display.get_bounds()
-        print(self.width, self.height)
 
         out_width = self.width
         out_height = self.height

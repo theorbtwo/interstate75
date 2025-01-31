@@ -43,7 +43,6 @@ class Interstate75:
     def __init__(self, display, panel_type=hub75.PANEL_GENERIC, stb_invert=False, color_order=hub75.COLOR_ORDER_RGB):
         self.display = PicoGraphics(display=display)
         self.width, self.height = self.display.get_bounds()
-        print(self.width, self.height)
 
         out_width = self.width
         out_height = self.height
