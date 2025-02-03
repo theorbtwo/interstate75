@@ -114,8 +114,6 @@ class EzWiFi:
             from secrets import WIFI_SSID, WIFI_PASSWORD
             if not WIFI_SSID:
                 raise ValueError("secrets.py: WIFI_SSID is empty!")
-            if not WIFI_PASSWORD:
-                raise ValueError("secrets.py: WIFI_PASSWORD is empty!")
             return WIFI_SSID, WIFI_PASSWORD
         except ImportError:
             raise ImportError("secrets.py: missing or invalid!")
