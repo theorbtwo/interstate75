@@ -83,6 +83,10 @@ class EzWiFi:
         await self._callback("failed")
         return False
 
+    async def disconnect(self):
+        if self._if.isconnected():
+            self._if.disconnect()
+
     async def _wait_for_connection(self):
         while not self._if.isconnected():
             await self._log("Connecting...")
