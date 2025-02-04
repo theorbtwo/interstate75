@@ -32,15 +32,19 @@ class EzWiFi:
         # self._if.config(pm=0xa11140) # TODO: ???
         self._statuses = {v: k[5:] for (k, v) in network.__dict__.items() if k.startswith("STAT_")}
 
-    def _callback(self, handler_name, *args, **kwargs):
+    async def _callback(self, handler_name, *args, **kwargs):
         handler = self._events.get(handler_name, None)
         if callable(handler):
-            handler(self, *args, **kwargs)
+            # TODO: This is ugly, but we don't want to force users to supply async handlers
+            if str(type(handler))[8:-2] == "generator":
+                await handler(self, *args, **kwargs)
+            else:
+                handler(self, *args, **kwargs)
             return True
         return False
 
-    def _log(self, text, level=LogLevel.INFO):
-        self._callback(LogLevel.text[level], text) or (self._verbose and print(text))
+    async def _log(self, text, level=LogLevel.INFO):
+        await self._callback(LogLevel.text[level], text) or (self._verbose and print(text))
 
     def on(self, handler_name, handler=None):
         if handler_name not in self._events.keys():
@@ -67,29 +71,33 @@ class EzWiFi:
             raise ValueError("ssid required!")
 
         for retry in range(retries):
-            self._log(f"Connecting to {ssid} (Attempt {retry + 1})")
+            await self._log(f"Connecting to {ssid} (Attempt {retry + 1})")
             try:
                 self._if.connect(ssid, password)
                 if await asyncio.wait_for(self._wait_for_connection(), timeout):
                     return True
 
             except asyncio.TimeoutError:
-                self._log("Attempt failed...", LogLevel.WARNING)
+                await self._log("Attempt failed...", LogLevel.WARNING)
 
-        self._callback("failed")
+        await self._callback("failed")
         return False
+
+    async def disconnect(self):
+        if self._if.isconnected():
+            self._if.disconnect()
 
     async def _wait_for_connection(self):
         while not self._if.isconnected():
-            self._log("Connecting...")
+            await self._log("Connecting...")
             status = self._if.status()
             if status in [network.STAT_CONNECT_FAIL, network.STAT_NO_AP_FOUND, network.STAT_WRONG_PASSWORD]:
-                self._log(f"Connection failed with: {self._statuses[status]}", LogLevel.ERROR)
+                await self._log(f"Connection failed with: {self._statuses[status]}", LogLevel.ERROR)
                 self._last_error = status
                 return False
             await asyncio.sleep_ms(1000)
-        self._log(f"Connected! IP: {self.ipv4()}")
-        self._callback("connected")
+        await self._log(f"Connected! IP: {self.ipv4()}")
+        await self._callback("connected")
         return True
 
     def ipv4(self):
@@ -106,8 +114,6 @@ class EzWiFi:
             from secrets import WIFI_SSID, WIFI_PASSWORD
             if not WIFI_SSID:
                 raise ValueError("secrets.py: WIFI_SSID is empty!")
-            if not WIFI_PASSWORD:
-                raise ValueError("secrets.py: WIFI_PASSWORD is empty!")
             return WIFI_SSID, WIFI_PASSWORD
         except ImportError:
             raise ImportError("secrets.py: missing or invalid!")
