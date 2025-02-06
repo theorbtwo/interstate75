@@ -1,6 +1,8 @@
 import time
-import math
 import random
+import machine
+import micropython
+from micropython import const
 from interstate75 import Interstate75, DISPLAY_INTERSTATE75_256X64
 
 machine.freq(266000000)
@@ -14,7 +16,7 @@ graphics = i75.display
 WIDTH = const(256 + 2)
 HEIGHT = const(64 + 4)
 fire_spawns = const(23)
-damping_factor = const(807) # int(0.98 * (1 << 12) // 5)
+damping_factor = const(807)  # int(0.98 * (1 << 12) // 5)
 
 fire_colours = [graphics.create_pen(0, 0, 0),
                 graphics.create_pen(20, 20, 20),
@@ -22,15 +24,17 @@ fire_colours = [graphics.create_pen(0, 0, 0),
                 graphics.create_pen(220, 160, 0),
                 graphics.create_pen(255, 255, 180)]
 
-heat_array = bytearray(HEIGHT*WIDTH*4)
+heat_array = bytearray(HEIGHT * WIDTH * 4)
 
-@micropython.viper  # noqa: F821
-def make_heat() -> ptr32:
-    heat = ptr32(heat_array)
+
+@micropython.viper
+def make_heat() -> ptr32:  # noqa: F821
+    heat = ptr32(heat_array)  # noqa: F821
     return heat
 
-@micropython.viper  # noqa: F821
-def update(heat:ptr32):
+
+@micropython.viper
+def update(heat: ptr32):  # noqa: F821
     # clear the bottom row and then add a new fire seed to it
     for x in range(WIDTH):
         heat[x + WIDTH * (HEIGHT - 1)] = 0
@@ -53,13 +57,13 @@ def update(heat:ptr32):
             heat[x + WIDTH * y] = new_heat >> 12
 
 
-@micropython.viper  # noqa: F821
-def draw(heat:ptr32, graphics:ptr32):
+@micropython.viper
+def draw(heat: ptr32, graphics: ptr32):  # noqa: F821
     # Convert the fixed point heat values into RGB888 colours,
     # writing directly to the graphics buffer
-    for y in range(HEIGHT-4):
-        for x in range(WIDTH-2):
-            value = heat[x + 1 + y*WIDTH]
+    for y in range(HEIGHT - 4):
+        for x in range(WIDTH - 2):
+            value = heat[x + 1 + y * WIDTH]
             if value < 9830:
                 colour = 0
             elif value < 16384:
@@ -70,9 +74,10 @@ def draw(heat:ptr32, graphics:ptr32):
                 colour = 0xdca000
             else:
                 colour = 0xffffb4
-            graphics[x + 256*y] = colour
+            graphics[x + 256 * y] = colour
 
     i75.update()
+
 
 heat = make_heat()
 
@@ -86,4 +91,3 @@ while True:
 
     # pause for a moment (important or the USB serial device will fail)
     time.sleep(0.001)
-
