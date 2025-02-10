@@ -1,5 +1,5 @@
 """
-This example lets you display an animated gif, by cycling quickly through a series of PNG images.
+This example displays multiple animated "gifs" (we're actually cycling quickly through a series of PNG images)
 
 First resize your gif to 128x128 pixels (we used https://ezgif.com/resize).
 
