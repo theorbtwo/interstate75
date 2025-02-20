@@ -1,5 +1,5 @@
 """
-This example lets you display an animated gif, by cycling quickly through a series of PNG images.
+This example lets you display an animated "gif" (we're actually cycling quickly through a series of PNG images).
 
 First resize your gif to 128x128 pixels (we used https://ezgif.com/resize for this).
 
@@ -17,7 +17,10 @@ import pngdec
 import os
 
 # Time to pause between frames
-INTERVAL = 0.02
+INTERVAL = 0.04
+
+# The name of the folder that the files are stored in
+DIR = "gif"
 
 # Setup for the display
 i75 = Interstate75(display=DISPLAY_INTERSTATE75_128X128)
@@ -29,12 +32,12 @@ p = pngdec.PNG(display)
 while True:
 
     # make a list of files in the gif folder
-    files = os.listdir("gif")
+    files = os.listdir(DIR)
 
     # open each file in the gif folder
     for file in files:
         if file.endswith(".png" or ".PNG"):
-            img = "gif/" + file
+            img = DIR + "/" + file
 
         p.open_file(img)
 
