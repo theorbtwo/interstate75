@@ -1,7 +1,7 @@
 import time
 from interstate75 import Interstate75, DISPLAY_INTERSTATE75_128X128
 
-i75 = Interstate75(DISPLAY_INTERSTATE75_128X128, stb_invert=True)
+i75 = Interstate75(DISPLAY_INTERSTATE75_128X128, stb_invert=False)
 graphics = i75.display
 
 width = i75.width
