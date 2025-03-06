@@ -44,12 +44,6 @@ function ci_micropython_clone {
     git submodule update --init lib/tinyusb
     git submodule update --init lib/btstack
     cd "$CI_BUILD_ROOT"
-    cd "$CI_BUILD_ROOT/micropython/lib/pico-sdk"
-    log_inform "HACK: cyw43 stability backport for Pico2 W. See: https://github.com/raspberrypi/pico-sdk/pull/2209"
-    git apply "$CI_PROJECT_ROOT/boards/pico2_w_cyw43.patch"
-    log_inform "HACK: backport multicore lockout fix. See: https://github.com/raspberrypi/pico-sdk/pull/2223"
-    git apply "$CI_PROJECT_ROOT/boards/multicore_lockout.patch"
-    cd "$CI_BUILD_ROOT"
 }
 
 function ci_tools_clone {
@@ -124,12 +118,16 @@ function ci_cmake_build {
     cmake --build $BUILD_DIR -j 2
     ccache --show-stats || true
 
-    log_inform "Copying .uf2 to $(pwd)/$BOARD.uf2"
-    cp "$BUILD_DIR/firmware.uf2" $BOARD.uf2
+    if [ -z ${CI_RELEASE_FILENAME+x} ]; then
+        CI_RELEASE_FILENAME=$BOARD
+    fi
+
+    log_inform "Copying .uf2 to $(pwd)/$CI_RELEASE_FILENAME.uf2"
+    cp "$BUILD_DIR/firmware.uf2" $CI_RELEASE_FILENAME.uf2
 
     if [ -f "$BUILD_DIR/firmware-with-filesystem.uf2" ]; then
-        log_inform "Copying -with-filesystem .uf2 to $(pwd)/$BOARD-with-filesystem.uf2"
-        cp "$BUILD_DIR/firmware-with-filesystem.uf2" $BOARD-with-filesystem.uf2
+        log_inform "Copying -with-filesystem .uf2 to $(pwd)/$CI_RELEASE_FILENAME-with-filesystem.uf2"
+        cp "$BUILD_DIR/firmware-with-filesystem.uf2" $CI_RELEASE_FILENAME-with-filesystem.uf2
     fi
 }
 
