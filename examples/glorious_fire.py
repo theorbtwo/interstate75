@@ -19,7 +19,7 @@ Play with the number of spawns, heat, damping factor and colour palette to tweak
 machine.freq(200_000_000)
 
 # MAXIMUM OVERKILL
-#machine.freq(250_000_000)
+# machine.freq(250_000_000)
 
 # Size of an individual fire "pixel", bigger pixels = faster
 SCALE = 3  # ideal values 2, 4, 8
