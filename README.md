@@ -18,9 +18,18 @@ You can find the latest release at [https://github.com/pimoroni/interstate75/rel
 ## Useful Links
 
 * [Function Reference](docs/README.md)
-* [Getting Started with Interstate 75](https://learn.pimoroni.com/article/getting-started-with-interstate-75)
+* [Learn: Getting Started with Interstate 75](https://learn.pimoroni.com/article/getting-started-with-interstate-75)
+* [Learn: Displaying Animated GIFs on Interstate 75 W](https://learn.pimoroni.com/article/gifs-and-interstate-75-w)
 
 ## Get Interstate 75
 
-* [Interstate 75 W](https://shop.pimoroni.com/products/interstate-75-w) (now with RP2350 and an RM2 wireless module aboard!)
+* [Interstate 75 W](https://shop.pimoroni.com/products/interstate-75-w) (now with RP2350 and RM2 wireless module aboard!)
 * [Interstate 75](https://shop.pimoroni.com/products/interstate-75)
+
+## Other Resources
+
+Links to community projects and other resources that you might find helpful can be found below. Note that these code examples have not been written/tested by us and we're not able to offer support with them.
+
+* [Make a Scrolling Hub75 Matrix Display using a Pimoroni Interstate75W and MQTT](https://www.digitalurban.org/blog/2024/07/12/creating-an-scrolling-hub75-matrix-display-with-pimoroni-interstate75w-and-mqtt/)
+
+
