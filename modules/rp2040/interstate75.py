@@ -44,7 +44,7 @@ class Interstate75:
     NUM_SWITCHES = 2
 
     def __init__(self, display, panel_type=hub75.PANEL_GENERIC, stb_invert=False, color_order=hub75.COLOR_ORDER_RGB, pen_type=PEN_RGB888):
-        self.interstate75w = "Pico W" in sys.implementation._machine
+        self.interstate75w = "Pico W" in sys.implementation._machine  # noqa: SLF001
         self.display = PicoGraphics(display=display, pen_type=pen_type)
         self.width, self.height = self.display.get_bounds()
 

@@ -146,8 +146,7 @@ def viper_display(source: ptr8, dest: ptr32, palette: ptr32):  # noqa: F821
 
 @micropython.viper
 def make_display_ptr32(display) -> ptr32:  # noqa: F821
-    mv = ptr32(memoryview(display))        # noqa: F821
-    return mv
+    return ptr32(memoryview(display))      # noqa: F821
 
 
 class GameOfLife:
@@ -187,7 +186,7 @@ class GameOfLife:
                     break
 
                 line = line.strip()
-                if line[0] == '#':
+                if line[0] == "#":
                     continue
 
                 if first_line:
@@ -196,9 +195,9 @@ class GameOfLife:
                         key, value = param.split("=")
                         key = key.strip()
                         value = value.strip()
-                        if key == 'x':
+                        if key == "x":
                             pattern_width = int(value)
-                        elif key == 'y':
+                        elif key == "y":
                             pattern_height = int(value)
                         else:
                             print(f"Unknown header param: {key} = {value}")
@@ -210,21 +209,21 @@ class GameOfLife:
 
                 start = 0
                 while start < len(line):
-                    if line[start] == '!':
+                    if line[start] == "!":
                         finished = True
                         break
 
-                    m = re.match(r'([0-9]*)([bo$])', line[start:])
+                    m = re.match(r"([0-9]*)([bo$])", line[start:])
                     if m is not None:
                         repeat = 1
                         if len(m.group(1)) > 0:
                             repeat = int(m.group(1))
 
-                        if m.group(2) == '$':
+                        if m.group(2) == "$":
                             y += repeat
                             x = (WIDTH - pattern_width) // 2
-                        elif m.group(2) == 'o':
-                            for i in range(repeat):
+                        elif m.group(2) == "o":
+                            for _ in range(repeat):
                                 self.board[y * WIDTH + x] = 0x80
                                 x += 1
                         else:

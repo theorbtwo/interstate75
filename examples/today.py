@@ -14,10 +14,10 @@ try:
         raise ValueError("WIFI_SSID in 'secrets.py' is empty!")
     if WIFI_PASSWORD == "":
         raise ValueError("WIFI_PASSWORD in 'secrets.py' is empty!")
-except ImportError:
-    raise ImportError("'secrets.py' is missing from your Interstate 75 W!")
-except ValueError as e:
-    print(e)
+except ImportError as err:
+    raise ImportError("'secrets.py' is missing from your Interstate 75 W!") from err
+except ValueError as err:
+    print(err)
 
 rtc = machine.RTC()
 
@@ -42,7 +42,7 @@ def network_connect(SSID, PSK):
         if wlan.status() < 0 or wlan.status() >= 3:
             break
         max_wait -= 1
-        print('waiting for connection...')
+        print("waiting for connection...")
         time.sleep(1)
 
     # Handle connection error. Switches the Warn LED on.

@@ -1,9 +1,9 @@
-'''
+"""
 
 Example showing how to draw a rect with rounded corners
 and rotate it around the display centre point using Pico Vector.
 
-'''
+"""
 
 from interstate75 import Interstate75, DISPLAY_INTERSTATE75_128X128
 from picovector import ANTIALIAS_BEST, PicoVector, Transform, Polygon

@@ -15,7 +15,7 @@ import interstate75
 from machine import Timer
 
 
-URL = 'http://api.thingspeak.com/channels/1417/field/2/last.json'
+URL = "http://api.thingspeak.com/channels/1417/field/2/last.json"
 
 UPDATE_INTERVAL = 327  # refresh interval in secs. Be nice to free APIs!
 # this esoteric number is used so that a column of LEDs equates (approximately) to an hour
@@ -24,36 +24,36 @@ UPDATE_INTERVAL = 327  # refresh interval in secs. Be nice to free APIs!
 def status_handler(mode, status, ip):
     # reports wifi connection status
     print(mode, status, ip)
-    print('Connecting to wifi...')
+    print("Connecting to wifi...")
     if status is not None:
         if status:
-            print('Wifi connection successful!')
+            print("Wifi connection successful!")
         else:
-            print('Wifi connection failed!')
+            print("Wifi connection failed!")
 
 
 def hex_to_rgb(hex):
     # converts a hex colour code into RGB
-    h = hex.lstrip('#')
+    h = hex.lstrip("#")
     r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
     return r, g, b
 
 
 def get_data():
     # open the json file
-    print(f'Requesting URL: {URL}')
+    print(f"Requesting URL: {URL}")
     r = urequests.get(URL)
     # open the json data
     j = r.json()
-    print('Data obtained!')
+    print("Data obtained!")
     r.close()
 
     # extract hex colour from the json data
-    hex = j['field2']
+    hex = j["field2"]
 
     # add the new hex colour to the end of the array
     colour_array.append(hex)
-    print(f'Colour added to array: {hex}')
+    print(f"Colour added to array: {hex}")
     # remove the oldest colour in the array
     colour_array.pop(0)
     update_leds()
@@ -90,21 +90,17 @@ current_colour = graphics.create_pen(0, 0, 0)
 colour_array = ["#000000"] * height * width
 
 # set up wifi
-try:
-    network_manager = NetworkManager(WIFI_CONFIG.COUNTRY, status_handler=status_handler)
-    uasyncio.get_event_loop().run_until_complete(network_manager.client(WIFI_CONFIG.SSID, WIFI_CONFIG.PSK))
-except Exception as e:
-    print(f'Wifi connection failed! {e}')
+network_manager = NetworkManager(WIFI_CONFIG.COUNTRY, status_handler=status_handler)
+uasyncio.get_event_loop().run_until_complete(network_manager.client(WIFI_CONFIG.SSID, WIFI_CONFIG.PSK))
 
 # get the first lot of data
 get_data()
 
 # start timer (the timer will call the function to update our data every UPDATE_INTERVAL)
 timer = Timer(-1)
-timer.init(period=UPDATE_INTERVAL * 1000, mode=Timer.PERIODIC, callback=lambda t: get_data())
+timer.init(period=UPDATE_INTERVAL * 1000, mode=Timer.PERIODIC, callback=lambda t: get_data())  # noqa: ARG005
 
 while True:
-
     update_leds()
 
     # pause for a moment (important or the USB serial device will fail)
