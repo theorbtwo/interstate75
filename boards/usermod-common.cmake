@@ -39,7 +39,11 @@ include(adcfft/micropython)
 
 # LEDs & Matrices
 include(plasma/micropython)
+if("${PICO_BOARD}" STREQUAL "pimoroni_interstate75_duo")
+include(duo75/micropython)
+else()
 include(hub75/micropython)
+endif()
 
 # Servos & Motors
 include(pwm/micropython)
