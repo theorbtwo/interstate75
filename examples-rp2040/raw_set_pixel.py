@@ -1,8 +1,8 @@
-'''
+"""
 raw_set_pixel.py
 This example shows how to set the pixels on the display individually without having to use pico graphics.
 This method can be used to save on memory usage.
-'''
+"""
 
 import hub75
 import random
@@ -34,7 +34,7 @@ counter = 0
 while 1:
     x, y = rand_pixel()
     r, g, b = rand_color()
-    print('Setting Pixel x: {0} y: {1}'.format(x, y))
+    print("Setting Pixel x: {0} y: {1}".format(x, y))
     h75.set_pixel(x, y, r, g, b)
     time.sleep(0.2)
     counter += 1

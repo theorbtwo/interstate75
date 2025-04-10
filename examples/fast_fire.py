@@ -33,9 +33,8 @@ heat_array = bytearray(HEIGHT * WIDTH * 4)
 
 
 @micropython.viper
-def make_heat() -> ptr32:  # noqa: F821
-    heat = ptr32(heat_array)  # noqa: F821
-    return heat
+def make_heat() -> ptr32:     # noqa: F821
+    return ptr32(heat_array)  # noqa: F821
 
 
 @micropython.viper
@@ -45,7 +44,7 @@ def update(heat: ptr32):  # noqa: F821
         heat[x + WIDTH * (HEIGHT - 1)] = 0
         heat[x + WIDTH * (HEIGHT - 2)] = 0
 
-    for c in range(fire_spawns):
+    for _ in range(fire_spawns):
         x = int(random.randint(2, WIDTH - 3))
         heat[x + 0 + WIDTH * (HEIGHT - 1)] += 65536
         heat[x + 1 + WIDTH * (HEIGHT - 1)] += 65536
@@ -55,7 +54,7 @@ def update(heat: ptr32):  # noqa: F821
         heat[x - 1 + WIDTH * (HEIGHT - 2)] += 65536
 
     # Propagate the fire using fixed point arithmetic
-    for y in range(0, HEIGHT - 2):
+    for y in range(HEIGHT - 2):
         for x in range(1, WIDTH - 1):
             new_heat = heat[x + WIDTH * y] + heat[x + WIDTH * (y + 1)] + heat[x + WIDTH * (y + 2)] + heat[x - 1 + WIDTH * (y + 1)] + heat[x + 1 + WIDTH * (y + 1)]
             new_heat *= damping_factor

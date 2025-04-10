@@ -139,20 +139,20 @@ class MazeBuilder:
         self.maze = []
 
         row = [1]
-        for x in range(0, self.width):
+        for _ in range(self.width):
             row.append(1)
             row.append(1)
         self.maze.append(row)
 
-        for y in range(0, self.height):
+        for y in range(self.height):
             row = [1]
-            for x in range(0, self.width):
+            for x in range(self.width):
                 row.append(0)
                 row.append(1 if self.cell_grid[x][y].right else 0)
             self.maze.append(row)
 
             row = [1]
-            for x in range(0, self.width):
+            for x in range(self.width):
                 row.append(1 if self.cell_grid[x][y].bottom else 0)
                 row.append(1)
             self.maze.append(row)
@@ -225,19 +225,19 @@ class Player(object):
         # Read the player's gamepad
         button = self.pad.read_buttons()
 
-        if button['L'] and maze[self.y][self.x - 1] != 1:
+        if button["L"] and maze[self.y][self.x - 1] != 1:
             self.x -= 1
             time.sleep(MOVEMENT_SLEEP)
 
-        elif button['R'] and maze[self.y][self.x + 1] != 1:
+        elif button["R"] and maze[self.y][self.x + 1] != 1:
             self.x += 1
             time.sleep(MOVEMENT_SLEEP)
 
-        elif button['U'] and maze[self.y - 1][self.x] != 1:
+        elif button["U"] and maze[self.y - 1][self.x] != 1:
             self.y -= 1
             time.sleep(MOVEMENT_SLEEP)
 
-        elif button['D'] and maze[self.y + 1][self.x] != 1:
+        elif button["D"] and maze[self.y + 1][self.x] != 1:
             self.y += 1
             time.sleep(MOVEMENT_SLEEP)
 
@@ -281,9 +281,9 @@ build_maze()
 # Create the player object if a QwSTPad is connected
 try:
     player = Player(*start, PLAYER, QwSTPad(i2c, I2C_ADDRESS))
-except OSError:
+except OSError as err:
     print("QwSTPad: Not Connected ... Exiting")
-    raise SystemExit
+    raise SystemExit from err
 
 print("QwSTPad: Connected ... Starting")
 
@@ -310,7 +310,7 @@ try:
                 complete = True
         else:
             # Check for the player wanting to continue
-            if player.pad.read_buttons()['+']:
+            if player.pad.read_buttons()["+"]:
                 complete = False
                 level += 1
                 build_maze()

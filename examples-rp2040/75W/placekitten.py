@@ -27,7 +27,7 @@ WHITE = graphics.create_pen(255, 255, 255)
 BLACK = graphics.create_pen(0, 0, 0)
 
 
-def status_handler(mode, status, ip):
+def status_handler(mode, status, ip):  # noqa: ARG001
     graphics.set_font("bitmap8")
     graphics.set_pen(BLACK)
     graphics.clear()

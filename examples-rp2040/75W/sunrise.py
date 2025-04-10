@@ -1,10 +1,10 @@
-'''
+"""
 sunrise.py
 This example is for Interstate 75 W, connected up to two chained 64 x 64 panels.
 It displays information from the Sunrise Sunset API:
 Find out more here - https://sunrise-sunset.org/api
 Also shows how to use a 16x16 animated sprite.
-'''
+"""
 import WIFI_CONFIG
 import time
 from math import radians, sin, cos
@@ -41,9 +41,9 @@ class TimeObj:
     # Set time variables from the sunrise-sunset API
     def parse_api(self, apiStr):
         strsplit = apiStr.split()
-        if strsplit[1] == 'PM':
+        if strsplit[1] == "PM":
             self.PM = True
-        timesplit = strsplit[0].split(':')
+        timesplit = strsplit[0].split(":")
         self.hours = int(timesplit[0])
         self.mins = int(timesplit[1])
         self.secs = int(timesplit[2])
@@ -74,7 +74,7 @@ lat = 53.3829
 # Coordinates for LA, USA
 # lng = -118.2437
 # lat = 34.0522
-URL = 'https://api.sunrise-sunset.org/json?lat={0}&lng={1}&date=today'.format(lat, lng)
+URL = "https://api.sunrise-sunset.org/json?lat={0}&lng={1}&date=today".format(lat, lng)
 rtc = machine.RTC()
 
 i75 = Interstate75(display=Interstate75.DISPLAY_INTERSTATE75_128X64)
@@ -155,20 +155,20 @@ sun = [
 
 def get_data():
     # open the json file
-    print(f'Requesting URL: {URL}')
+    print(f"Requesting URL: {URL}")
     r = urequests.get(URL)
     # open the json data
     j = r.json()
-    print('Data obtained!')
+    print("Data obtained!")
     r.close()
     return j
 
 
 def get_sunrise():
     sun_json = get_data()
-    sunrise = sun_json['results']['sunrise']
+    sunrise = sun_json["results"]["sunrise"]
     sunrise_obj.parse_api(sunrise)
-    sunset = sun_json['results']['sunset']
+    sunset = sun_json["results"]["sunset"]
     sunset_obj.parse_api(sunset)
 
 
@@ -185,15 +185,15 @@ def status_handler(mode, status, ip):
     # reports wifi connection status
     global sys_status
     print(mode, status, ip)
-    sys_status = 'Mode: {0} Connected: {1} IP: {2}'.format(mode, status, ip)
+    sys_status = "Mode: {0} Connected: {1} IP: {2}".format(mode, status, ip)
     display_status()
     i75.update(graphics)
-    print('Connecting to wifi...')
+    print("Connecting to wifi...")
     if status is not None:
         if status:
-            print('Wifi connection successful!')
+            print("Wifi connection successful!")
         else:
-            print('Wifi connection failed!')
+            print("Wifi connection failed!")
 
 
 def calc_circle_points(ori_x, ori_y, r, deg):
@@ -257,11 +257,8 @@ def draw_sun(sunrise, sunset, time, cycle):
                 graphics.pixel(x + pos_x, int((y + pos_y)))
 
 
-try:
-    network_manager = NetworkManager(WIFI_CONFIG.COUNTRY, status_handler=status_handler)
-    uasyncio.get_event_loop().run_until_complete(network_manager.client(WIFI_CONFIG.SSID, WIFI_CONFIG.PSK))
-except Exception as e:
-    print(f'Wifi connection failed! {e}')
+network_manager = NetworkManager(WIFI_CONFIG.COUNTRY, status_handler=status_handler)
+uasyncio.get_event_loop().run_until_complete(network_manager.client(WIFI_CONFIG.SSID, WIFI_CONFIG.PSK))
 
 get_sunrise()
 ntptime.settime()
