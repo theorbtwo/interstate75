@@ -78,6 +78,7 @@ class Duo75 {
     };
     const uint width = 128;
     const uint height = 128;
+    const uint panel_b_offset = (width * height / 2);
     uint r_shift = 0;
     uint g_shift = 10;
     uint b_shift = 20;
@@ -112,7 +113,7 @@ class Duo75 {
     uint data_prog_offs_b = 0;
     uint row_prog_offs_b = 0;
 
-    uint brightness = 6;
+    const uint brightness = 5;
 
     // Top half of display - 16 rows on a 32x32 panel
     unsigned int pin_r0 = 0;

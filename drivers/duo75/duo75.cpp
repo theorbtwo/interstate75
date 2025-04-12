@@ -41,17 +41,6 @@ Duo75::Duo75(Pixel *buffer, PanelType panel_type, bool inverted_stb, COLOR_ORDER
         managed_buffer = false;
     }
 
-    if (brightness == 0) {
-#if PICO_RP2350
-        brightness = 4;
-#else
-        if (width >= 64) brightness = 6;
-        if (width >= 96) brightness = 3;
-        if (width >= 128) brightness = 2;
-        if (width >= 160) brightness = 1;
-#endif
-    }
-
     switch (color_order) {
         case COLOR_ORDER::RGB:
             r_shift = 0;
@@ -195,8 +184,13 @@ void Duo75::start(irq_handler_t handler) {
         duo75_row_program_init(pio_b, sm_row_b, row_prog_offs_b, ROWSEL_BASE_PIN + 32, ROWSEL_N_PINS, pin_stb + 32, latch_cycles);
 
         // Prevent flicker in Python caused by the smaller dataset just blasting through the PIO too quickly
-        pio_sm_set_clkdiv(pio_a, sm_data_a, width <= 32 ? 2.0f : 1.0f);
-        pio_sm_set_clkdiv(pio_b, sm_data_b, width <= 32 ? 2.0f : 1.0f);
+        //pio_sm_set_clkdiv(pio_a, sm_data_a, 2.0f);
+        //pio_sm_set_clkdiv(pio_b, sm_data_b, 2.0f);
+        const float clock_hz = SYS_CLK_MHZ * 1000000;
+        pio_sm_set_clkdiv(pio_a, sm_data_a, clock_get_hz(clk_sys) / (clock_hz / 2));
+        pio_sm_set_clkdiv(pio_b, sm_data_b, clock_get_hz(clk_sys) / (clock_hz / 2));
+        pio_sm_set_clkdiv(pio_a, sm_row_a, clock_get_hz(clk_sys) / (clock_hz / 4));
+        pio_sm_set_clkdiv(pio_b, sm_row_b, clock_get_hz(clk_sys) / (clock_hz / 4));
 
         dma_channel_a = dma_claim_unused_channel(true);
         dma_channel_config config_a = dma_channel_get_default_config(dma_channel_a);
@@ -216,7 +210,7 @@ void Duo75::start(irq_handler_t handler) {
         irq_add_shared_handler(DMA_IRQ_0, handler, PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY);
 
         dma_channel_set_irq0_enabled(dma_channel_a, true);
-        dma_channel_set_irq0_enabled(dma_channel_b, true);
+        //dma_channel_set_irq0_enabled(dma_channel_b, true);
 
         irq_set_enabled(DMA_IRQ_0, true);
 
@@ -231,8 +225,9 @@ void Duo75::start(irq_handler_t handler) {
         dma_channel_set_trans_count(dma_channel_a, width * 2, false);
         dma_channel_set_trans_count(dma_channel_b, width * 2, false);
 
-        dma_channel_set_read_addr(dma_channel_a, &back_buffer, true);
-        dma_channel_set_read_addr(dma_channel_b, &back_buffer + (width * height / 2), true);
+        dma_channel_set_read_addr(dma_channel_a, &back_buffer, false);
+        dma_channel_set_read_addr(dma_channel_b, &back_buffer + (width * height / 2), false);
+        dma_start_channel_mask((0b1 << dma_channel_a) | (0b1 << dma_channel_b));
     }
 }
 
@@ -298,13 +293,12 @@ void Duo75::stop(irq_handler_t handler) {
     // since we don't know what the PIO might have done with it
     gpio_put_masked(0b111111 << pin_r0, 0);
     gpio_put_masked(0b11111 << pin_row_a, 0);
-    gpio_put(pin_clk, !clk_polarity);
-    gpio_put(pin_clk, !oe_polarity);
 
     gpio_put_masked64((uint64_t)0b111111 << (pin_r0 + 32), 0);
     gpio_put_masked64((uint64_t)0b11111 << (pin_row_a + 32), 0);
-    gpio_put((pin_clk + 32), !clk_polarity);
-    gpio_put((pin_clk + 32), !oe_polarity);
+
+    gpio_put_both(pin_clk, !clk_polarity);
+    gpio_put_both(pin_oe, !oe_polarity);
 }
 
 Duo75::~Duo75() {
@@ -330,15 +324,20 @@ void Duo75::dma_complete() {
         // Push out a dummy pixel for each row
         pio_sm_put_blocking(pio_a, sm_data_a, 0);
         pio_sm_put_blocking(pio_a, sm_data_a, 0);
+        pio_sm_put_blocking(pio_b, sm_data_b, 0);
+        pio_sm_put_blocking(pio_b, sm_data_b, 0);
 
         // SM is finished when it stalls on empty TX FIFO
         duo75_wait_tx_stall(pio_a, sm_data_a);
+        duo75_wait_tx_stall(pio_b, sm_data_b);
 
         // Check that previous OEn pulse is finished, else things WILL get out of sequence
         duo75_wait_tx_stall(pio_a, sm_row_a);
+        duo75_wait_tx_stall(pio_b, sm_row_b);
 
         // Latch row data, pulse output enable for new row.
         pio_sm_put_blocking(pio_a, sm_row_a, row_a | (brightness << 5 << bit_a));
+        pio_sm_put_blocking(pio_b, sm_row_b, row_a | (brightness << 5 << bit_a));
 
         row_a++;
 
@@ -349,41 +348,17 @@ void Duo75::dma_complete() {
                 bit_a = 0;
             }
             duo75_data_rgb888_set_shift(pio_a, sm_data_a, data_prog_offs_a, bit_a);
+            duo75_data_rgb888_set_shift(pio_b, sm_data_b, data_prog_offs_b, bit_a);
         }
 
         dma_channel_set_trans_count(dma_channel_a, width * 2, false);
-        dma_channel_set_read_addr(dma_channel_a, &back_buffer[row_a * width * 2], true);
-    }
-
-    if(dma_channel_get_irq0_status(dma_channel_b)) {
-        dma_channel_acknowledge_irq0(dma_channel_b);
-
-        // Push out a dummy pixel for each row
-        pio_sm_put_blocking(pio_b, sm_data_b, 0);
-        pio_sm_put_blocking(pio_b, sm_data_b, 0);
-
-        // SM is finished when it stalls on empty TX FIFO
-        duo75_wait_tx_stall(pio_b, sm_data_b);
-
-        // Check that previous OEn pulse is finished, else things WILL get out of sequence
-        duo75_wait_tx_stall(pio_b, sm_row_b);
-
-        // Latch row data, pulse output enable for new row.
-        pio_sm_put_blocking(pio_b, sm_row_b, row_b | (brightness << 5 << bit_b));
-
-        row_b++;
-
-        if(row_b == height / 4) {
-            row_b = 0;
-            bit_b++;
-            if (bit_b == BIT_DEPTH) {
-                bit_b = 0;
-            }
-            duo75_data_rgb888_set_shift(pio_b, sm_data_b, data_prog_offs_b, bit_b);
-        }
-
         dma_channel_set_trans_count(dma_channel_b, width * 2, false);
-        dma_channel_set_read_addr(dma_channel_b, &back_buffer[(width * height / 2) + row_b * width * 2], true);
+
+        uint row_offset = row_a * width * 2;
+        dma_channel_set_read_addr(dma_channel_b, &back_buffer[panel_b_offset + row_offset], false);
+        dma_channel_set_read_addr(dma_channel_a, &back_buffer[row_offset], false);
+
+        dma_start_channel_mask((0b1 << dma_channel_a) | (0b1 << dma_channel_b));
     }
 }
 
