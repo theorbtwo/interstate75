@@ -227,27 +227,25 @@ void Duo75::start(irq_handler_t handler) {
 
         dma_channel_set_read_addr(dma_channel_a, &back_buffer, false);
         dma_channel_set_read_addr(dma_channel_b, &back_buffer + (width * height / 2), false);
+
         dma_start_channel_mask((0b1 << dma_channel_a) | (0b1 << dma_channel_b));
     }
 }
 
 void Duo75::stop(irq_handler_t handler) {
-
     irq_set_enabled(DMA_IRQ_0, false);
 
     if(dma_channel_a != -1 &&  dma_channel_is_claimed(dma_channel_a)) {
         dma_channel_set_irq0_enabled(dma_channel_a, false);
-        //dma_channel_wait_for_finish_blocking(dma_channel);
+        dma_channel_wait_for_finish_blocking(dma_channel_a);
         dma_channel_abort(dma_channel_a);
         dma_channel_acknowledge_irq0(dma_channel_a);
         dma_channel_unclaim(dma_channel_a);
     }
 
     if(dma_channel_b != -1 &&  dma_channel_is_claimed(dma_channel_b)) {
-        dma_channel_set_irq0_enabled(dma_channel_b, false);
-        //dma_channel_wait_for_finish_blocking(dma_channel);
+        dma_channel_wait_for_finish_blocking(dma_channel_b);
         dma_channel_abort(dma_channel_b);
-        dma_channel_acknowledge_irq0(dma_channel_b);
         dma_channel_unclaim(dma_channel_b);
     }
 
@@ -255,14 +253,14 @@ void Duo75::stop(irq_handler_t handler) {
 
     if(pio_sm_is_claimed(pio_a, sm_data_a)) {
         pio_sm_set_enabled(pio_a, sm_data_a, false);
-        pio_sm_drain_tx_fifo(pio_a, sm_data_a);
+        pio_sm_clear_fifos(pio_a, sm_data_a);
         pio_remove_program(pio_a, &duo75_data_rgb888_program, data_prog_offs_a);
         pio_sm_unclaim(pio_a, sm_data_a);
     }
 
     if(pio_sm_is_claimed(pio_a, sm_row_a)) {
         pio_sm_set_enabled(pio_a, sm_row_a, false);
-        pio_sm_drain_tx_fifo(pio_a, sm_row_a);
+        pio_sm_clear_fifos(pio_a, sm_row_a);
         if (inverted_stb) {
             pio_remove_program(pio_a, &duo75_row_inverted_program, row_prog_offs_a);
         } else {
@@ -273,14 +271,14 @@ void Duo75::stop(irq_handler_t handler) {
 
     if(pio_sm_is_claimed(pio_b, sm_data_b)) {
         pio_sm_set_enabled(pio_b, sm_data_b, false);
-        pio_sm_drain_tx_fifo(pio_b, sm_data_b);
+        pio_sm_clear_fifos(pio_b, sm_data_b);
         pio_remove_program(pio_b, &duo75_data_rgb888_program, data_prog_offs_b);
         pio_sm_unclaim(pio_b, sm_data_b);
     }
 
     if(pio_sm_is_claimed(pio_b, sm_row_b)) {
         pio_sm_set_enabled(pio_b, sm_row_b, false);
-        pio_sm_drain_tx_fifo(pio_b, sm_row_b);
+        pio_sm_clear_fifos(pio_b, sm_row_b);
         if (inverted_stb) {
             pio_remove_program(pio_b, &duo75_row_inverted_program, row_prog_offs_b);
         } else {
@@ -320,6 +318,7 @@ void Duo75::dma_complete() {
 
     if(dma_channel_get_irq0_status(dma_channel_a)) {
         dma_channel_acknowledge_irq0(dma_channel_a);
+        dma_channel_wait_for_finish_blocking(dma_channel_b);
 
         // Push out a dummy pixel for each row
         pio_sm_put_blocking(pio_a, sm_data_a, 0);
@@ -362,20 +361,23 @@ void Duo75::dma_complete() {
     }
 }
 
+
 void Duo75::copy_to_back_buffer(void *data, size_t len, int start_x, int start_y) {
-    uint8_t *p = (uint8_t *)data;
+    uint32_t *p = (uint32_t *)data;
+    uint32_t *end = p + (len / 4);
 
     for(uint y = start_y; y < height; y++) {
+        uint sx = width - 1 - y;
         for(uint x = start_x; x < width; x++) {
             // x and y are swapped to achieve a 90degree rotation
             uint sy = x;
-            uint sx = width - 1 - y;
             uint offset = sx * 2; // * 2 because we have pairs of pixels
 
-            uint8_t b = *p++;
-            uint8_t g = *p++;
-            uint8_t r = *p++;
-            p++; // Skip empty byte in out 32-bit aligned 24-bit colour.
+            uint32_t rgb = *p++;
+            //uint8_t b = *p++;
+            //uint8_t g = *p++;
+            //uint8_t r = *p++;
+            //p++; // Skip empty byte in out 32-bit aligned 24-bit colour.
 
             // Interlace the top and bottom halves of the panel.
             // Since these are scanned out simultaneously to two chains
@@ -399,11 +401,9 @@ void Duo75::copy_to_back_buffer(void *data, size_t len, int start_x, int start_y
 
             offset += sy * (width * 2);
 
-            back_buffer[offset] = (GAMMA_10BIT[b] << b_shift) | (GAMMA_10BIT[g] << g_shift) | (GAMMA_10BIT[r] << r_shift);
+            back_buffer[offset] = (GAMMA_10BIT[rgb & 0xff] << b_shift) | (GAMMA_10BIT[(rgb >> 8) & 0xff] << g_shift) | (GAMMA_10BIT[(rgb >> 16) & 0xff] << r_shift);
 
-            len -= 4;
-
-            if(len == 0) {
+            if(p >= end) {
                 return;
             }
         }
