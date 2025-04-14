@@ -158,6 +158,7 @@ void Duo75::start(irq_handler_t handler) {
             FM6126A_setup();
         }
 
+        // Prevent ghosting
         uint latch_cycles = clock_get_hz(clk_sys) / 4000000;
 
         // Claim the PIO so we can clean it upon soft restart
@@ -183,14 +184,18 @@ void Duo75::start(irq_handler_t handler) {
         duo75_row_program_init(pio_a, sm_row_a, row_prog_offs_a, ROWSEL_BASE_PIN, ROWSEL_N_PINS, pin_stb, latch_cycles);
         duo75_row_program_init(pio_b, sm_row_b, row_prog_offs_b, ROWSEL_BASE_PIN + 32, ROWSEL_N_PINS, pin_stb + 32, latch_cycles);
 
-        // Prevent flicker in Python caused by the smaller dataset just blasting through the PIO too quickly
-        //pio_sm_set_clkdiv(pio_a, sm_data_a, 2.0f);
-        //pio_sm_set_clkdiv(pio_b, sm_data_b, 2.0f);
-        const float clock_hz = SYS_CLK_MHZ * 1000000;
-        pio_sm_set_clkdiv(pio_a, sm_data_a, clock_get_hz(clk_sys) / (clock_hz / 2));
-        pio_sm_set_clkdiv(pio_b, sm_data_b, clock_get_hz(clk_sys) / (clock_hz / 2));
-        pio_sm_set_clkdiv(pio_a, sm_row_a, clock_get_hz(clk_sys) / (clock_hz / 4));
-        pio_sm_set_clkdiv(pio_b, sm_row_b, clock_get_hz(clk_sys) / (clock_hz / 4));
+        // Keep PIO constant when overclocked
+        //const float clock_hz = SYS_CLK_MHZ * 1000000;
+        //pio_sm_set_clkdiv(pio_a, sm_data_a, clock_get_hz(clk_sys) / clock_hz);
+        //pio_sm_set_clkdiv(pio_b, sm_data_b, clock_get_hz(clk_sys) / clock_hz);
+        //pio_sm_set_clkdiv(pio_a, sm_row_a, clock_get_hz(clk_sys) / clock_hz);
+        //pio_sm_set_clkdiv(pio_b, sm_row_b, clock_get_hz(clk_sys) / clock_hz);
+
+        // Let PIO run wild and free!
+        pio_sm_set_clkdiv(pio_a, sm_data_a, 1);
+        pio_sm_set_clkdiv(pio_b, sm_data_b, 1);
+        pio_sm_set_clkdiv(pio_a, sm_row_a, 1);
+        pio_sm_set_clkdiv(pio_b, sm_row_b, 1);
 
         dma_channel_a = dma_claim_unused_channel(true);
         dma_channel_config config_a = dma_channel_get_default_config(dma_channel_a);
@@ -330,13 +335,9 @@ void Duo75::dma_complete() {
         duo75_wait_tx_stall(pio_a, sm_data_a);
         duo75_wait_tx_stall(pio_b, sm_data_b);
 
-        // Check that previous OEn pulse is finished, else things WILL get out of sequence
-        duo75_wait_tx_stall(pio_a, sm_row_a);
-        duo75_wait_tx_stall(pio_b, sm_row_b);
-
         // Latch row data, pulse output enable for new row.
-        pio_sm_put_blocking(pio_a, sm_row_a, row_a | (brightness << 5 << bit_a));
-        pio_sm_put_blocking(pio_b, sm_row_b, row_a | (brightness << 5 << bit_a));
+        pio_sm_put_blocking(pio_a, sm_row_a, row_a | ((brightness << bit_a) - 7) << 5);
+        pio_sm_put_blocking(pio_b, sm_row_b, row_a | ((brightness << bit_a) - 7) << 5);
 
         row_a++;
 
@@ -350,12 +351,16 @@ void Duo75::dma_complete() {
             duo75_data_rgb888_set_shift(pio_b, sm_data_b, data_prog_offs_b, bit_a);
         }
 
-        dma_channel_set_trans_count(dma_channel_a, width * 2, false);
-        dma_channel_set_trans_count(dma_channel_b, width * 2, false);
+        // Check that previous OEn pulse is finished, else things WILL get out of sequence
+        duo75_wait_tx_stall(pio_a, sm_row_a);
+        duo75_wait_tx_stall(pio_b, sm_row_b);
 
         uint row_offset = row_a * width * 2;
         dma_channel_set_read_addr(dma_channel_b, &back_buffer[panel_b_offset + row_offset], false);
         dma_channel_set_read_addr(dma_channel_a, &back_buffer[row_offset], false);
+
+        dma_channel_set_trans_count(dma_channel_a, width * 2, false);
+        dma_channel_set_trans_count(dma_channel_b, width * 2, false);
 
         dma_start_channel_mask((0b1 << dma_channel_a) | (0b1 << dma_channel_b));
     }
@@ -367,17 +372,13 @@ void Duo75::copy_to_back_buffer(void *data, size_t len, int start_x, int start_y
     uint32_t *end = p + (len / 4);
 
     for(uint y = start_y; y < height; y++) {
-        uint sx = width - 1 - y;
+        uint sx = (width - 1 - y) * 2;
         for(uint x = start_x; x < width; x++) {
             // x and y are swapped to achieve a 90degree rotation
             uint sy = x;
-            uint offset = sx * 2; // * 2 because we have pairs of pixels
+            uint offset = sx; // * 2 because we have pairs of pixels
 
             uint32_t rgb = *p++;
-            //uint8_t b = *p++;
-            //uint8_t g = *p++;
-            //uint8_t r = *p++;
-            //p++; // Skip empty byte in out 32-bit aligned 24-bit colour.
 
             // Interlace the top and bottom halves of the panel.
             // Since these are scanned out simultaneously to two chains
@@ -386,7 +387,7 @@ void Duo75::copy_to_back_buffer(void *data, size_t len, int start_x, int start_y
 
             // If we're on the second panel, shift up our pixel and adjust
             // the offset to place it into the latter half of the buffer.
-            if(sy >= uint(height / 2)) {
+            if(sy >= height / 2) {
                 sy -= height / 2;
             } else {
                 offset += (width * height / 2);
@@ -394,7 +395,7 @@ void Duo75::copy_to_back_buffer(void *data, size_t len, int start_x, int start_y
 
             // If we're now on the second half of a panel, shift up our
             // pixel and adjust the offset to interlace it.
-            if(sy >= uint(height / 4)) {
+            if(sy >= height / 4) {
                 sy -= height / 4;
                 offset += 1;
             }

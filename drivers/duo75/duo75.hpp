@@ -113,7 +113,7 @@ class Duo75 {
     uint data_prog_offs_b = 0;
     uint row_prog_offs_b = 0;
 
-    const uint brightness = 5;
+    const uint brightness = 10;
 
     // Top half of display - 16 rows on a 32x32 panel
     unsigned int pin_r0 = 0;
