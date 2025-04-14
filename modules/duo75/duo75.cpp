@@ -14,6 +14,28 @@ extern "C" {
 #include "py/mpthread.h"
 #include "micropython/modules/pimoroni_i2c/pimoroni_i2c.h"
 
+void __printf_debug_flush() {
+    for(auto i = 0u; i < 10; i++) {
+        sleep_ms(2);
+        mp_event_handle_nowait();
+    }
+}
+
+int mp_vprintf(const mp_print_t *print, const char *fmt, va_list args);
+
+#if DEBUG
+void duo75_debug(const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    int ret = mp_vprintf(&mp_plat_print, fmt, ap);
+    va_end(ap);
+    __printf_debug_flush();
+    (void)ret;
+}
+#else
+#define duo75_debug(fmt, ...)
+#endif
+
 typedef struct _ModPicoGraphics_obj_t {
     mp_obj_base_t base;
     PicoGraphics *graphics;
@@ -42,6 +64,9 @@ typedef struct _Duo75_obj_t {
     mp_obj_base_t base;
     Duo75* duo75;
     void *buf;
+    volatile bool exit_core1;
+    // Automatic ambient backlight control
+    volatile bool auto_ambient_leds;
 } _Duo75_obj_t;
 
 _Duo75_obj_t *duo75_obj;
@@ -49,6 +74,61 @@ _Duo75_obj_t *duo75_obj;
 
 void __isr dma_complete() {
     if(duo75_obj) duo75_obj->duo75->dma_complete();
+}
+
+#define stack_size 512u
+static uint32_t core1_stack[stack_size] = {0};
+
+void duo75_core1_entry() {
+    // The multicore lockout uses the FIFO, so we use just use sev and volatile flags to signal this core
+    multicore_lockout_victim_init();
+
+    duo75_obj->duo75->start(dma_complete);
+
+    multicore_fifo_push_blocking(0); // TODO: handle issues here?
+
+    // Duo75 is now running the display using interrupts on this core.
+    // We can also drive the backlight if requested.
+    while (true) {
+        if (duo75_obj->exit_core1) {
+            break;
+        }
+        // TODO: Backlight goes here!
+    }
+
+    duo75_obj->duo75->stop(dma_complete);
+
+    multicore_fifo_push_blocking(0);
+}
+
+void duo75_core1_start() {
+    // Micropython uses all of both scratch memory (and more!) for core0 stack, 
+    // so we must supply our own small stack for core1 here.
+    multicore_launch_core1_with_stack(duo75_core1_entry, core1_stack, stack_size);
+    duo75_debug("launched core1\n");
+
+    int res = multicore_fifo_pop_blocking();
+    duo75_debug("core1 returned\n");
+
+    if(res != 0) {
+        mp_raise_msg(&mp_type_RuntimeError, "Hub75 Duo: failed to start Core1.");
+    }
+}
+
+void duo75_core1_stop() {
+    duo75_debug("signal core1\n");
+    duo75_obj->exit_core1 = true;
+    __sev();
+
+    int fifo_code;
+    do {
+        fifo_code = multicore_fifo_pop_blocking();
+        if (fifo_code == 1) {
+            // TODO: LED cleanup here
+        }
+    } while (fifo_code != 0);
+
+    duo75_debug("core1 returned\n");
 }
 
 /***** Print *****/
@@ -60,9 +140,11 @@ void Duo75_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind
 
 /***** Destructor ******/
 mp_obj_t Duo75___del__(mp_obj_t self_in) {
-    _Duo75_obj_t *self = MP_OBJ_TO_PTR2(self_in, _Duo75_obj_t);
-    self->duo75->stop(dma_complete);
-    m_del_class(Duo75, self->duo75);
+    (void)self_in;
+    duo75_core1_stop();
+    m_del_class(Duo75, duo75_obj->duo75);
+    duo75_obj->duo75 = nullptr;
+    duo75_obj = nullptr;
     return mp_const_none;
 }
 
@@ -115,14 +197,14 @@ mp_obj_t Duo75_update(mp_obj_t self_in, mp_obj_t graphics_in) {
 }
 
 mp_obj_t Duo75_start(mp_obj_t self_in) {
-    _Duo75_obj_t *self = MP_OBJ_TO_PTR2(self_in, _Duo75_obj_t);
-    self->duo75->start(dma_complete);
+    (void)self_in;
+    duo75_core1_start();
     return mp_const_none;
 }
 
 mp_obj_t Duo75_stop(mp_obj_t self_in) {
-    _Duo75_obj_t *self = MP_OBJ_TO_PTR2(self_in, _Duo75_obj_t);
-    self->duo75->stop(dma_complete);
+    (void)self_in;
+    duo75_core1_stop();
     return mp_const_none;
 }
 
