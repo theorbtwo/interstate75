@@ -102,6 +102,10 @@ void duo75_core1_entry() {
 }
 
 void duo75_core1_start() {
+    duo75_debug("launch core1\n");
+    multicore_reset_core1();
+    duo75_obj->exit_core1 = false;
+
     // Micropython uses all of both scratch memory (and more!) for core0 stack, 
     // so we must supply our own small stack for core1 here.
     multicore_launch_core1_with_stack(duo75_core1_entry, core1_stack, stack_size);
