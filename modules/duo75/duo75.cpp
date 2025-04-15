@@ -67,6 +67,8 @@ typedef struct _Duo75_obj_t {
     volatile bool exit_core1;
     // Automatic ambient backlight control
     volatile bool auto_ambient_leds;
+    volatile bool flip;
+    PicoGraphics *graphics;
 } _Duo75_obj_t;
 
 _Duo75_obj_t *duo75_obj;
@@ -76,7 +78,7 @@ void __isr dma_complete() {
     if(duo75_obj) duo75_obj->duo75->dma_complete();
 }
 
-#define stack_size 512u
+#define stack_size 1024u
 static uint32_t core1_stack[stack_size] = {0};
 
 void duo75_core1_entry() {
@@ -93,7 +95,10 @@ void duo75_core1_entry() {
         if (duo75_obj->exit_core1) {
             break;
         }
-        // TODO: Backlight goes here!
+        if (duo75_obj->flip) {
+            duo75_obj->duo75->update(duo75_obj->graphics);
+            duo75_obj->flip = false;
+        }
     }
 
     duo75_obj->duo75->stop(dma_complete);
@@ -105,6 +110,7 @@ void duo75_core1_start() {
     duo75_debug("launch core1\n");
     multicore_reset_core1();
     duo75_obj->exit_core1 = false;
+    duo75_obj->flip = false;
 
     // Micropython uses all of both scratch memory (and more!) for core0 stack, 
     // so we must supply our own small stack for core1 here.
@@ -186,10 +192,14 @@ mp_obj_t Duo75_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, c
 }
 
 mp_obj_t Duo75_update(mp_obj_t self_in, mp_obj_t graphics_in) {
-    _Duo75_obj_t *self = MP_OBJ_TO_PTR2(self_in, _Duo75_obj_t);
+    (void)self_in;
     ModPicoGraphics_obj_t *picographics = MP_OBJ_TO_PTR2(graphics_in, ModPicoGraphics_obj_t);
 
-    self->duo75->update(picographics->graphics);
+    while(duo75_obj->flip) {};
+
+    duo75_obj->graphics = picographics->graphics;
+    duo75_obj->flip = true;
+    __sev();
 
     return mp_const_none;
 }
