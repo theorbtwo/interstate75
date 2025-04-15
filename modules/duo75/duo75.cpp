@@ -185,12 +185,6 @@ mp_obj_t Duo75_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, c
     return MP_OBJ_FROM_PTR(duo75_obj);
 }
 
-mp_obj_t Duo75_clear(mp_obj_t self_in) {
-    _Duo75_obj_t *self = MP_OBJ_TO_PTR2(self_in, _Duo75_obj_t);
-    self->duo75->clear();
-    return mp_const_none;
-}
-
 mp_obj_t Duo75_update(mp_obj_t self_in, mp_obj_t graphics_in) {
     _Duo75_obj_t *self = MP_OBJ_TO_PTR2(self_in, _Duo75_obj_t);
     ModPicoGraphics_obj_t *picographics = MP_OBJ_TO_PTR2(graphics_in, ModPicoGraphics_obj_t);
@@ -209,33 +203,6 @@ mp_obj_t Duo75_start(mp_obj_t self_in) {
 mp_obj_t Duo75_stop(mp_obj_t self_in) {
     (void)self_in;
     duo75_core1_stop();
-    return mp_const_none;
-}
-
-mp_obj_t Duo75_set_pixel(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_self, ARG_x, ARG_y, ARG_r, ARG_g, ARG_b };
-    static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ },
-        { MP_QSTR_x, MP_ARG_REQUIRED | MP_ARG_INT },
-        { MP_QSTR_y, MP_ARG_REQUIRED | MP_ARG_INT },
-        { MP_QSTR_r, MP_ARG_REQUIRED | MP_ARG_INT },
-        { MP_QSTR_g, MP_ARG_REQUIRED | MP_ARG_INT },
-        { MP_QSTR_b, MP_ARG_REQUIRED | MP_ARG_INT }
-    };
-
-    // Parse args.
-    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
-
-    int x = args[ARG_x].u_int;
-    int y = args[ARG_y].u_int;
-    int r = args[ARG_r].u_int;
-    int g = args[ARG_g].u_int;
-    int b = args[ARG_b].u_int;
-
-    _Duo75_obj_t *self = MP_OBJ_TO_PTR2(args[ARG_self].u_obj, _Duo75_obj_t);
-    self->duo75->set_pixel(x, y, r, g, b);
-
     return mp_const_none;
 }
 

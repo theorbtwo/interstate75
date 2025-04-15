@@ -11,8 +11,7 @@ namespace pimoroni {
 #define GPIO_INIT_BOTH(pin, initial) gpio_init(pin); gpio_set_function(pin, GPIO_FUNC_SIO); gpio_set_dir(pin, true); gpio_put(pin, initial); \
                                      gpio_init(pin + 32); gpio_set_function(pin + 32, GPIO_FUNC_SIO); gpio_set_dir(pin + 32, true); gpio_put(pin + 32, initial)
 
-Duo75::Duo75(Pixel *buffer, PanelType panel_type, bool inverted_stb, COLOR_ORDER color_order)
- : panel_type(panel_type), inverted_stb(inverted_stb), color_order(color_order)
+Duo75::Duo75(Pixel *buffer)
  {
     // Set up allllll the GPIO
     GPIO_INIT_BOTH(pin_r0, 0);
@@ -40,80 +39,6 @@ Duo75::Duo75(Pixel *buffer, PanelType panel_type, bool inverted_stb, COLOR_ORDER
         back_buffer = buffer;
         managed_buffer = false;
     }
-
-    switch (color_order) {
-        case COLOR_ORDER::RGB:
-            r_shift = 0;
-            g_shift = 10;
-            b_shift = 20;
-            break;
-        case COLOR_ORDER::RBG:
-            r_shift = 0;
-            g_shift = 20;
-            b_shift = 10;
-            break;
-        case COLOR_ORDER::GRB:
-            r_shift = 20;
-            g_shift = 0;
-            b_shift = 10;
-            break;
-        case COLOR_ORDER::GBR:
-            r_shift = 10;
-            g_shift = 20;
-            b_shift = 0;
-            break;
-        case COLOR_ORDER::BRG:
-            r_shift = 10;
-            g_shift = 00;
-            b_shift = 20;
-            break;
-        case COLOR_ORDER::BGR:
-            r_shift = 20;
-            g_shift = 10;
-            b_shift = 0;
-            break;
-
-    }
-}
-
-void Duo75::set_color(uint x, uint y, Pixel c) {
-    Pixel *buf = back_buffer + width * height / 2;
-    int offset = 0;
-    if(x >= width || y >= height) return;
-
-    if(y >= height / 2) {
-        y -= height / 2;
-        buf = back_buffer;
-    }
-
-    if(y >= height / 4) {
-        y -= height / 4;
-        offset = (y * width + x) * 2;
-        offset += 1;
-    } else {
-        offset = (y * width + x) * 2;
-    }
-    buf[offset] = c;
-}
-
-void Duo75::set_pixel(uint x, uint y, uint8_t r, uint8_t g, uint8_t b) {
-    Pixel *buf = back_buffer + width * height / 2;
-    int offset = 0;
-    if(x >= width || y >= height) return;
-
-    if(y >= height / 2) {
-        y -= height / 2;
-        buf = back_buffer;
-    }
-
-    if(y >= height / 4) {
-        y -= height / 4;
-        offset = (y * width + x) * 2;
-        offset += 1;
-    } else {
-        offset = (y * width + x) * 2;
-    }
-    buf[offset] = (GAMMA_10BIT[b] << b_shift) | (GAMMA_10BIT[g] << g_shift) | (GAMMA_10BIT[r] << r_shift);
 }
 
 void gpio_put_both(uint pin, bool value) {
@@ -121,43 +46,8 @@ void gpio_put_both(uint pin, bool value) {
     gpio_put(pin + 32, value);
 }
 
-void Duo75::FM6126A_write_register(uint16_t value, uint8_t position) {
-    gpio_put_both(pin_clk, !clk_polarity);
-    gpio_put_both(pin_stb, !stb_polarity);
-
-    uint8_t threshold = width - position;
-    for(auto i = 0u; i < width; i++) {
-        auto j = i % 16;
-        bool b = value & (1 << j);
-
-        gpio_put_both(pin_r0, b);
-        gpio_put_both(pin_g0, b);
-        gpio_put_both(pin_b0, b);
-        gpio_put_both(pin_r1, b);
-        gpio_put_both(pin_g1, b);
-        gpio_put_both(pin_b1, b);
-
-        // Assert strobe/latch if i > threshold
-        // This somehow indicates to the FM6126A which register we want to write :|
-        gpio_put_both(pin_stb, i > threshold);
-        gpio_put_both(pin_clk, clk_polarity);
-        sleep_us(10);
-        gpio_put_both(pin_clk, !clk_polarity);
-    }
-}
-
-void Duo75::FM6126A_setup() {
-    // Ridiculous register write nonsense for the FM6126A-based 64x64 matrix
-    FM6126A_write_register(0b1111111111111110, 12);
-    FM6126A_write_register(0b0000001000000000, 13);
-}
-
 void Duo75::start(irq_handler_t handler) {
     if(handler) {
-        if (panel_type == PANEL_FM6126A) {
-            FM6126A_setup();
-        }
-
         // Prevent ghosting
         uint latch_cycles = clock_get_hz(clk_sys) / 4000000;
 
@@ -173,13 +63,8 @@ void Duo75::start(irq_handler_t handler) {
 
         data_prog_offs_a = pio_add_program(pio_a, &duo75_data_rgb888_program);
         data_prog_offs_b = pio_add_program(pio_b, &duo75_data_rgb888_program);
-        if (inverted_stb) {
-            row_prog_offs_a = pio_add_program(pio_a, &duo75_row_inverted_program);
-            row_prog_offs_b = pio_add_program(pio_b, &duo75_row_inverted_program);
-        } else {
-            row_prog_offs_a = pio_add_program(pio_a, &duo75_row_program);
-            row_prog_offs_b = pio_add_program(pio_b, &duo75_row_program);
-        }
+        row_prog_offs_a = pio_add_program(pio_a, &duo75_row_program);
+        row_prog_offs_b = pio_add_program(pio_b, &duo75_row_program);
 
         duo75_data_rgb888_program_init(pio_a, sm_data_a1, data_prog_offs_a, DATA_BASE_PIN, pin_clk);
         duo75_data_rgb888_program_init(pio_a, sm_data_a2, data_prog_offs_a, DATA_BASE_PIN + 3, pin_clk);
@@ -235,18 +120,15 @@ void Duo75::start(irq_handler_t handler) {
         channel_config_set_dreq(&config_b2, pio_get_dreq(pio_b, sm_data_b2, true));
         dma_channel_configure(dma_channel_b2, &config_b2, &pio_b->txf[sm_data_b2], NULL, 0, false);
 
-        // Same handler for both DMA channels
+        // Same handler for all four DMA channels
         irq_add_shared_handler(DMA_IRQ_0, handler, PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY);
 
         dma_channel_set_irq0_enabled(dma_channel_a1, true);
-        //dma_channel_set_irq0_enabled(dma_channel_b, true);
 
         irq_set_enabled(DMA_IRQ_0, true);
 
         row_a = 0;
         bit_a = 0;
-        //row_b = 0;
-        //bit_b = 0;
 
         duo75_data_rgb888_set_shift(pio_a, 0, data_prog_offs_a, bit_a);
         duo75_data_rgb888_set_shift(pio_b, 0, data_prog_offs_b, bit_a);
@@ -317,11 +199,7 @@ void Duo75::stop(irq_handler_t handler) {
     if(pio_sm_is_claimed(pio_a, sm_row_a)) {
         pio_sm_set_enabled(pio_a, sm_row_a, false);
         pio_sm_clear_fifos(pio_a, sm_row_a);
-        if (inverted_stb) {
-            pio_remove_program(pio_a, &duo75_row_inverted_program, row_prog_offs_a);
-        } else {
-            pio_remove_program(pio_a, &duo75_row_program, row_prog_offs_a);
-        }
+        pio_remove_program(pio_a, &duo75_row_program, row_prog_offs_a);
         pio_sm_unclaim(pio_a, sm_row_a);
     }
 
@@ -341,11 +219,7 @@ void Duo75::stop(irq_handler_t handler) {
     if(pio_sm_is_claimed(pio_b, sm_row_b)) {
         pio_sm_set_enabled(pio_b, sm_row_b, false);
         pio_sm_clear_fifos(pio_b, sm_row_b);
-        if (inverted_stb) {
-            pio_remove_program(pio_b, &duo75_row_inverted_program, row_prog_offs_b);
-        } else {
-            pio_remove_program(pio_b, &duo75_row_program, row_prog_offs_b);
-        }
+        pio_remove_program(pio_b, &duo75_row_inverted_program, row_prog_offs_b);
         pio_sm_unclaim(pio_b, sm_row_b);
     }
 
@@ -366,15 +240,6 @@ Duo75::~Duo75() {
         delete[] back_buffer;
     }
 }
-
-void Duo75::clear() {
-    for(auto x = 0u; x < width; x++) {
-        for(auto y = 0u; y < height; y++) {
-            set_pixel(x, y, 0, 0, 0);
-        }
-    }
-}
-
 
 void Duo75::dma_complete() {
 
@@ -429,17 +294,15 @@ void Duo75::dma_complete() {
     }
 }
 
-
-void Duo75::copy_to_back_buffer(void *data, size_t len, int start_x, int start_y) {
+inline void Duo75::copy_to_back_buffer(void *data, size_t len, int start_x, int start_y) {
     uint32_t *p = (uint32_t *)data;
     uint32_t *end = p + (len / 4);
 
     for(uint y = start_y; y < height; y++) {
         // We are swapping X and Y to achieve a 90 degree rotation
-        // Mirror along the Y axis
+        // Mirror along the Y axis (top to bottom)
         uint sx = height - 1 - y;
         for(uint x = start_x; x < width; x++) {
-            // x and y are swapped to achieve a 90degree rotation
             uint sy = x;
             uint offset = sx;
 
@@ -450,14 +313,14 @@ void Duo75::copy_to_back_buffer(void *data, size_t len, int start_x, int start_y
             if(sy >= height / 2) {
                 sy -= height / 2;
             } else {
-                offset += (width * height / 2);
+                offset += panel_b_offset;
             }
 
             offset += sy * width;
 
-            back_buffer[offset] = (GAMMA_10BIT[rgb & 0xff] << b_shift) | (GAMMA_10BIT[(rgb >> 8) & 0xff] << g_shift) | (GAMMA_10BIT[(rgb >> 16) & 0xff] << r_shift);
+            back_buffer[offset] = (GAMMA_10BIT[rgb & 0xff] << 20) | (GAMMA_10BIT[(rgb >> 8) & 0xff] << 10) | (GAMMA_10BIT[(rgb >> 16) & 0xff] << 0);
 
-            if(p >= end) {
+            if(p == end) {
                 return;
             }
         }

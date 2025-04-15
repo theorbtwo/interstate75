@@ -79,15 +79,9 @@ class Duo75 {
     const uint width = 128;
     const uint height = 128;
     const uint panel_b_offset = (width * height / 2);
-    uint r_shift = 0;
-    uint g_shift = 10;
-    uint b_shift = 20;
+
     Pixel *back_buffer;
     bool managed_buffer = false;
-    PanelType panel_type;
-    bool inverted_stb = false;
-    COLOR_ORDER color_order;
-    Pixel background = 0;
 
     // DMA & PIO
     int dma_channel_a1 = -1;
@@ -96,20 +90,18 @@ class Duo75 {
     int dma_channel_b2 = -1;
 
     uint bit_a = 0;
-    //uint bit_b = 0;
     uint row_a = 0;
-    //uint row_b = 0;
 
-    PIO pio_a = pio0;
-    PIO pio_b = pio1;
+    const PIO pio_a = pio0;
+    const PIO pio_b = pio1;
 
-    uint sm_data_a1 = 0;
-    uint sm_data_a2 = 1;
-    uint sm_row_a = 2;
+    const uint sm_data_a1 = 0;
+    const uint sm_data_a2 = 1;
+    const uint sm_row_a = 2;
 
-    uint sm_data_b1 = 0;
-    uint sm_data_b2 = 1;
-    uint sm_row_b = 2;
+    const uint sm_data_b1 = 0;
+    const uint sm_data_b2 = 1;
+    const uint sm_row_b = 2;
 
     uint data_prog_offs_a = 0;
     uint row_prog_offs_a = 0;
@@ -145,31 +137,15 @@ class Duo75 {
     const bool stb_polarity = 1;
     const bool oe_polarity = 0;
 
-    // User buttons and status LED
-    unsigned int pin_sw_a = 14;
-    unsigned int pin_sw_user = 23;
-
-    unsigned int pin_led_r = 16;
-    unsigned int pin_led_g = 17;
-    unsigned int pin_led_b = 18;
-
     Duo75(void) : Duo75(nullptr) {};
-    Duo75(Pixel *buffer) : Duo75(buffer, PANEL_GENERIC) {};
-    Duo75(Pixel *buffer, PanelType panel_type) : Duo75(buffer, panel_type, false) {};
-    Duo75(Pixel *buffer, PanelType panel_type, bool inverted_stb, COLOR_ORDER color_order=COLOR_ORDER::RGB);
+    Duo75(Pixel *buffer);
     ~Duo75();
 
-    void FM6126A_write_register(uint16_t value, uint8_t position);
-    void FM6126A_setup();
-    void set_color(uint x, uint y, Pixel c);
-
-    void set_pixel(uint x, uint y, uint8_t r, uint8_t g, uint8_t b);
-    void copy_to_back_buffer(void *data, size_t len, int start_x, int start_y);
-    void display_update();
-    void clear();
     void start(irq_handler_t handler);
     void stop(irq_handler_t handler);
     void dma_complete();
     void update(PicoGraphics *graphics);
+    private:
+    void copy_to_back_buffer(void *data, size_t len, int start_x, int start_y);
     };
 }

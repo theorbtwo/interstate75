@@ -3,8 +3,6 @@
 
 /***** Methods *****/
 MP_DEFINE_CONST_FUN_OBJ_1(Duo75___del___obj, Duo75___del__);
-MP_DEFINE_CONST_FUN_OBJ_KW(Duo75_set_pixel_obj, 5, Duo75_set_pixel);
-MP_DEFINE_CONST_FUN_OBJ_1(Duo75_clear_obj, Duo75_clear);
 MP_DEFINE_CONST_FUN_OBJ_1(Duo75_start_obj, Duo75_start);
 MP_DEFINE_CONST_FUN_OBJ_1(Duo75_stop_obj, Duo75_stop);
 MP_DEFINE_CONST_FUN_OBJ_2(Duo75_update_obj, Duo75_update);
@@ -13,8 +11,6 @@ MP_DEFINE_CONST_FUN_OBJ_2(Duo75_update_obj, Duo75_update);
 /***** Binding of Methods *****/
 static const mp_rom_map_elem_t Duo75_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&Duo75___del___obj) },
-    { MP_ROM_QSTR(MP_QSTR_set_pixel), MP_ROM_PTR(&Duo75_set_pixel_obj) },
-    { MP_ROM_QSTR(MP_QSTR_clear), MP_ROM_PTR(&Duo75_clear_obj) },
     { MP_ROM_QSTR(MP_QSTR_start), MP_ROM_PTR(&Duo75_start_obj) },
     { MP_ROM_QSTR(MP_QSTR_stop), MP_ROM_PTR(&Duo75_stop_obj) },
     { MP_ROM_QSTR(MP_QSTR_update), MP_ROM_PTR(&Duo75_update_obj) },
