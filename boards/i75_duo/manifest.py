@@ -8,4 +8,4 @@ require("aioble")
 include("../manifest-common.py")
 
 freeze("../../modules/wireless/")
-freeze("../../modules/duo/")
+freeze("../../modules/duo75/", "interstate75.py")
