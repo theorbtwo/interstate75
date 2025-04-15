@@ -195,11 +195,19 @@ mp_obj_t Duo75_update(mp_obj_t self_in, mp_obj_t graphics_in) {
     (void)self_in;
     ModPicoGraphics_obj_t *picographics = MP_OBJ_TO_PTR2(graphics_in, ModPicoGraphics_obj_t);
 
-    while(duo75_obj->flip) {};
+    if(picographics->graphics->pen_type == PicoGraphics::PEN_RGB888) {
 
-    duo75_obj->graphics = picographics->graphics;
-    duo75_obj->flip = true;
-    __sev();
+        while(duo75_obj->flip) {};
+
+        duo75_obj->graphics = picographics->graphics;
+        duo75_obj->flip = true;
+        __sev();
+
+    } else {
+        // TODO: Get non-native palette modes working on Core1 again...
+        duo75_obj->duo75->update(picographics->graphics);
+
+    }
 
     return mp_const_none;
 }
