@@ -332,10 +332,10 @@ void Duo75::update(PicoGraphics *graphics) {
         copy_to_back_buffer(graphics->frame_buffer, width * height * sizeof(RGB888), 0, 0);
     } else {
         unsigned int offset = 0;
-        graphics->frame_convert(PicoGraphics::PEN_RGB888, [this, &offset, &graphics](void *data, size_t length) {
+        graphics->frame_convert(PicoGraphics::PEN_RGB888, [this, &offset](void *data, size_t length) {
             if (length > 0) {
-                int offset_y = offset / graphics->bounds.w;
-                int offset_x = offset - (offset_y * graphics->bounds.w);
+                int offset_y = offset / width;
+                int offset_x = offset - (offset_y * width);
                 copy_to_back_buffer(data, length, offset_x, offset_y);
                 offset += length / sizeof(RGB888);
             }
