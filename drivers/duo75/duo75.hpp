@@ -90,22 +90,26 @@ class Duo75 {
     Pixel background = 0;
 
     // DMA & PIO
-    int dma_channel_a = -1;
-    int dma_channel_b = -1;
+    int dma_channel_a1 = -1;
+    int dma_channel_a2 = -1;
+    int dma_channel_b1 = -1;
+    int dma_channel_b2 = -1;
 
     uint bit_a = 0;
-    uint bit_b = 0;
+    //uint bit_b = 0;
     uint row_a = 0;
-    uint row_b = 0;
+    //uint row_b = 0;
 
     PIO pio_a = pio0;
     PIO pio_b = pio1;
 
-    uint sm_data_a = 0;
-    uint sm_row_a = 1;
+    uint sm_data_a1 = 0;
+    uint sm_data_a2 = 1;
+    uint sm_row_a = 2;
 
-    uint sm_data_b = 0;
-    uint sm_row_b = 1;
+    uint sm_data_b1 = 0;
+    uint sm_data_b2 = 1;
+    uint sm_row_b = 2;
 
     uint data_prog_offs_a = 0;
     uint row_prog_offs_a = 0;
@@ -113,7 +117,7 @@ class Duo75 {
     uint data_prog_offs_b = 0;
     uint row_prog_offs_b = 0;
 
-    const uint brightness = 10;
+    const uint brightness = 5;
 
     // Top half of display - 16 rows on a 32x32 panel
     unsigned int pin_r0 = 0;

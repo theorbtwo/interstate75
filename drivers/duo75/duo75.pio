@@ -113,19 +113,12 @@ public shift0:              ; R0 G0 B0 (Top half of 64x64 displays)
     in osr, 1        side 0 ; Blue0 N
     out null, 32     side 0 ; Remainder discard
 
-public shift1:              ; R1 G1 B1 (Bottom half of 64x64 displays)
-    pull             side 0 ; gets patched to `out null, n` if n nonzero (otherwise the PULL is required for fencing)
-    in osr, 1        side 1 ; Red1 N
-    out null, 10     side 1 ; Red1 discard
-
-    in osr, 1        side 1 ; Green1 N
-    out null, 10     side 1 ; Green1 discard
-
-    in osr, 1        side 1 ; Blue1 N
-    out null, 32     side 1 ; Remainder discard
-
-    in null, 26      side 1 ; Note we are just doing this little manoeuvre here to get GPIOs in the order
-    mov pins, ::isr  side 1 ; R0, G0, B0, R1, G1, B1. Can go 1 cycle faster if reversed
+    in null, 29      side 0 ; Note we are just doing this little manoeuvre here to get GPIOs in the order
+    mov pins, ::isr  side 0 ; R0, G0, B0, R1, G1, B1. Can go 1 cycle faster if reversed
+    nop              side 0
+    nop              side 0
+    nop              side 1
+    nop              side 1
 
 .wrap
 ; Note that because the clock edge for pixel n is in the middle of pixel n +
@@ -134,23 +127,28 @@ public shift1:              ; R1 G1 B1 (Bottom half of 64x64 displays)
 ; harmless)
 
 % c-sdk {
-static inline void duo75_data_rgb888_program_init(PIO pio, uint sm, uint offset, uint rgb_base_pin, uint clock_pin) {
-    pio_sm_set_consecutive_pindirs(pio, sm, rgb_base_pin, 6, true);
-    pio_sm_set_consecutive_pindirs(pio, sm, clock_pin, 1, true);
+static inline void duo75_data_rgb888_program_init(PIO pio, uint sm, uint offset, uint rgb_base_pin, int clock_pin) {
+    pio_sm_set_consecutive_pindirs(pio, sm, rgb_base_pin, 3, true);
+
     for (uint i = rgb_base_pin; i < rgb_base_pin + 6; ++i)
         pio_gpio_init(pio, i);
-    pio_gpio_init(pio, clock_pin);
 
     pio_sm_config c = duo75_data_rgb888_program_get_default_config(offset);
-    sm_config_set_out_pins(&c, rgb_base_pin, 6);
-    sm_config_set_sideset_pins(&c, clock_pin);
+    sm_config_set_out_pins(&c, rgb_base_pin, 3);
+
+    if(clock_pin > -1) {
+        pio_sm_set_consecutive_pindirs(pio, sm, clock_pin, 1, true);
+        pio_gpio_init(pio, clock_pin);
+        sm_config_set_sideset_pins(&c, clock_pin);
+    }
+
     sm_config_set_out_shift(&c, true, true, 32);
     // ISR shift to left. R0 ends up at bit 5. We push it up to MSB and then flip the register.
     sm_config_set_in_shift(&c, false, false, 32);
     sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
     pio_sm_init(pio, sm, offset, &c);
     pio_sm_exec(pio, sm, offset + duo75_data_rgb888_offset_entry_point);
-    pio_sm_set_enabled(pio, sm, true);
+    //pio_sm_set_enabled(pio, sm, true);
 }
 
 // Patch a data program at `offset` to preshift pixels by `shamt`
@@ -158,9 +156,11 @@ static inline void duo75_data_rgb888_set_shift(PIO pio, uint sm, uint offset, ui
     uint16_t instr;
     if (shamt == 0)
         instr = pio_encode_pull(false, true); // blocking PULL
+        //instr = 32960;
     else
         instr = pio_encode_out(pio_null, shamt);
+        //instr = 0b110000001100000 | shamt;
     pio->instr_mem[offset + duo75_data_rgb888_offset_shift0] = instr;
-    pio->instr_mem[offset + duo75_data_rgb888_offset_shift1] = instr;
+    //pio->instr_mem[offset + duo75_data_rgb888_offset_shift1] = instr;
 }
 %}
