@@ -191,6 +191,11 @@ mp_obj_t Duo75_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, c
     return MP_OBJ_FROM_PTR(duo75_obj);
 }
 
+mp_obj_t Duo75_is_busy(mp_obj_t self_in) {
+    (void)self_in;
+    return mp_obj_new_bool(duo75_obj->flip);
+}
+
 mp_obj_t Duo75_update(mp_obj_t self_in, mp_obj_t graphics_in) {
     (void)self_in;
     ModPicoGraphics_obj_t *picographics = MP_OBJ_TO_PTR2(graphics_in, ModPicoGraphics_obj_t);

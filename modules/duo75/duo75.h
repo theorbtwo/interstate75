@@ -12,3 +12,4 @@ extern mp_obj_t Duo75___del__(mp_obj_t self_in);
 extern mp_obj_t Duo75_start(mp_obj_t self_in);
 extern mp_obj_t Duo75_stop(mp_obj_t self_in);
 extern mp_obj_t Duo75_update(mp_obj_t self_in, mp_obj_t graphics_in);
+extern mp_obj_t Duo75_is_busy(mp_obj_t self_in);
