@@ -67,6 +67,7 @@ typedef struct _Duo75_obj_t {
     volatile bool exit_core1;
     // Automatic ambient backlight control
     volatile bool auto_ambient_leds;
+    volatile bool blocking;
     volatile bool flip;
     PicoGraphics *graphics;
 } _Duo75_obj_t;
@@ -127,6 +128,7 @@ void duo75_core1_start() {
 
 void duo75_core1_stop() {
     duo75_debug("signal core1\n");
+    duo75_obj->flip = false;
     duo75_obj->exit_core1 = true;
     __sev();
 
@@ -187,8 +189,16 @@ mp_obj_t Duo75_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, c
     duo75_obj = mp_obj_malloc_with_finaliser(_Duo75_obj_t, &Duo75_type);
     duo75_obj->buf = buffer;
     duo75_obj->duo75 = m_new_class(Duo75, buffer);
+    duo75_obj->blocking = false;
+    duo75_obj->flip = false;
 
     return MP_OBJ_FROM_PTR(duo75_obj);
+}
+
+mp_obj_t Duo75_set_blocking(mp_obj_t self_in, mp_obj_t blocking_in) {
+    (void)self_in;
+    duo75_obj->blocking = mp_obj_is_true(blocking_in);
+    return mp_const_none;
 }
 
 mp_obj_t Duo75_is_busy(mp_obj_t self_in) {
@@ -200,7 +210,7 @@ mp_obj_t Duo75_update(mp_obj_t self_in, mp_obj_t graphics_in) {
     (void)self_in;
     ModPicoGraphics_obj_t *picographics = MP_OBJ_TO_PTR2(graphics_in, ModPicoGraphics_obj_t);
 
-    if(picographics->graphics->pen_type == PicoGraphics::PEN_RGB888) {
+   if(!duo75_obj->blocking) {
 
         while(duo75_obj->flip) {};
 
@@ -209,7 +219,7 @@ mp_obj_t Duo75_update(mp_obj_t self_in, mp_obj_t graphics_in) {
         __sev();
 
     } else {
-        // TODO: Get non-native palette modes working on Core1 again...
+
         duo75_obj->duo75->update(picographics->graphics);
 
     }

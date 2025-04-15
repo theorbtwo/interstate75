@@ -47,7 +47,6 @@ class Interstate75:
 
         self.display = PicoGraphics(display=DISPLAY_INTERSTATE75_128X128, pen_type=pen_type)
         self.width, self.height = self.display.get_bounds()
-        self.blocking = False
 
         self.duo75 = duo75.Duo75()
         self.duo75.start()
@@ -66,13 +65,11 @@ class Interstate75:
         # Set up the i2c for Qw/st and Breakout Garden
         self.i2c = machine.I2C()
 
-    # def set_blocking(self, blocking):
-    #     self.blocking = blocking
+    def set_blocking(self, blocking):
+        self.duo75.set_blocking(blocking)
 
     def update(self, buffer=None):
         self.duo75.update(buffer or self.display)
-        # while self.blocking and self.is_busy():
-        #     pass
 
     def is_busy(self):
         return self.duo75.is_busy()

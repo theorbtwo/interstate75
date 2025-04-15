@@ -7,6 +7,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(Duo75_start_obj, Duo75_start);
 MP_DEFINE_CONST_FUN_OBJ_1(Duo75_stop_obj, Duo75_stop);
 MP_DEFINE_CONST_FUN_OBJ_2(Duo75_update_obj, Duo75_update);
 MP_DEFINE_CONST_FUN_OBJ_1(Duo75_is_busy_obj, Duo75_is_busy);
+MP_DEFINE_CONST_FUN_OBJ_2(Duo75_set_blocking_obj, Duo75_set_blocking);
 
 
 /***** Binding of Methods *****/
@@ -14,6 +15,7 @@ static const mp_rom_map_elem_t Duo75_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&Duo75___del___obj) },
     { MP_ROM_QSTR(MP_QSTR_update), MP_ROM_PTR(&Duo75_update_obj) },
     { MP_ROM_QSTR(MP_QSTR_is_busy), MP_ROM_PTR(&Duo75_is_busy_obj) },
+    { MP_ROM_QSTR(MP_QSTR_set_blocking), MP_ROM_PTR(&Duo75_set_blocking_obj) },
     { MP_ROM_QSTR(MP_QSTR_start), MP_ROM_PTR(&Duo75_start_obj) },
     { MP_ROM_QSTR(MP_QSTR_stop), MP_ROM_PTR(&Duo75_stop_obj) },
 };
