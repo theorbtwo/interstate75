@@ -3,6 +3,8 @@
 #include <cmath>
 
 #include "hardware/clocks.h"
+#include "hardware/structs/bus_ctrl.h"
+#include "hardware/address_mapped.h"
 
 #include "duo75.hpp"
 
@@ -147,6 +149,8 @@ void Duo75::start(irq_handler_t handler) {
 
         dma_start_channel_mask((0b1 << dma_channel_a1) | (0b1 << dma_channel_a2) | (0b1 << dma_channel_b1) | (0b1 << dma_channel_b2));
 
+        hw_set_bits(&bus_ctrl_hw->priority, (BUSCTRL_BUS_PRIORITY_PROC1_BITS | BUSCTRL_BUS_PRIORITY_DMA_R_BITS | BUSCTRL_BUS_PRIORITY_DMA_W_BITS));
+
         //pio_enable_sm_mask_in_sync(pio_a, (0b1 << sm_data_a1) | (0b1 << sm_data_a2));
         //pio_enable_sm_mask_in_sync(pio_b, (0b1 << sm_data_b1) | (0b1 << sm_data_b2));
         pio_enable_sm_multi_mask_in_sync(pio_a, 0, (0b1 << sm_data_a1) | (0b1 << sm_data_a2), (0b1 << sm_data_b1) | (0b1 << sm_data_b2));
@@ -241,7 +245,7 @@ Duo75::~Duo75() {
     }
 }
 
-void Duo75::dma_complete() {
+void __no_inline_not_in_flash_func(Duo75::dma_complete()) {
 
     if(dma_channel_get_irq0_status(dma_channel_a1)) {
         dma_channel_acknowledge_irq0(dma_channel_a1);
@@ -274,12 +278,6 @@ void Duo75::dma_complete() {
             duo75_data_rgb888_set_shift(pio_a, 0, data_prog_offs_a, bit_a);
             duo75_data_rgb888_set_shift(pio_b, 0, data_prog_offs_b, bit_a);
         }
-
-        dma_channel_set_trans_count(dma_channel_a1, width, false); // Third Quarter
-        dma_channel_set_trans_count(dma_channel_a2, width, false); // Forth Quarter
-
-        dma_channel_set_trans_count(dma_channel_b1, width, false); // Second Quarter
-        dma_channel_set_trans_count(dma_channel_b2, width, false); // First Quarter
 
         uint row_offset = row_a * width;
     
