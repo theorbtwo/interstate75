@@ -122,7 +122,7 @@ void duo75_core1_start() {
     duo75_debug("core1 returned\n");
 
     if(res != 0) {
-        mp_raise_msg(&mp_type_RuntimeError, "Hub75 Duo: failed to start Core1.");
+        mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("Hub75 Duo: failed to start Core1."));
     }
 }
 
