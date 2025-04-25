@@ -72,6 +72,8 @@ def draw(heat: ptr32, graphics: ptr32):  # noqa: F821
                 colour = 0
             elif value < 16384:
                 colour = 0x141414
+            elif value < 20000:
+                colour = 0x201414
             elif value < 22938:
                 colour = 0xb41e00
             elif value < 29490:
