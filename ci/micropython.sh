@@ -3,7 +3,6 @@ export TERM=${TERM:="xterm-256color"}
 MICROPYTHON_FLAVOUR="micropython"
 MICROPYTHON_VERSION="master"
 
-#PIMORONI_PICO_FLAVOUR="pimoroni"
 PIMORONI_PICO_FLAVOUR="castaway"
 PIMORONI_PICO_VERSION="picographics-any-size"
 
